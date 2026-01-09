@@ -1,0 +1,18 @@
+Analyzing dracin-app...
+
+  error - lib/features/player/screens/player_screen.dart:42:7 - The named parameter 'useAsynchronousLoader' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'useAsynchronousLoader'. - undefined_named_parameter
+   info - lib/core/theme/app_theme.dart:14:9 - 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/core/theme/app_theme.dart:49:9 - 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/core/widgets/custom_skeleton.dart:56:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/comment/widgets/comment_section.dart:113:56 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/home/widgets/series_card.dart:36:35 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/home/widgets/series_card.dart:70:38 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/home/widgets/series_card.dart:99:45 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/series/providers/episodes_provider.dart:15:9 - An uninitialized field should have an explicit type annotation. Try adding a type annotation. - prefer_typing_uninitialized_variables
+   info - lib/features/series/screens/series_detail_screen.dart:72:58 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/series/screens/series_detail_screen.dart:199:46 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/watchlist/screens/watchlist_screen.dart:26:13 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib/features/watchlist/screens/watchlist_screen.dart:27:22 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - lib/features/watchlist/screens/watchlist_screen.dart:29:27 - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal. - prefer_const_literals_to_create_immutables
+
+14 issues found.

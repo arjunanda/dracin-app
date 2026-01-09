@@ -1,0 +1,16 @@
+Analyzing dracin-app...
+
+   info - lib/core/widgets/custom_skeleton.dart:56:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/comment/widgets/comment_section.dart:113:56 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/home/widgets/series_card.dart:36:35 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/home/widgets/series_card.dart:70:38 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/home/widgets/series_card.dart:99:45 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/series/screens/series_detail_screen.dart:72:58 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/series/screens/series_detail_screen.dart:199:46 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/watchlist/screens/watchlist_screen.dart:30:19 - Unnecessary 'const' keyword. Try removing the keyword. - unnecessary_const
+   info - lib/features/watchlist/screens/watchlist_screen.dart:35:19 - Unnecessary 'const' keyword. Try removing the keyword. - unnecessary_const
+   info - lib/features/watchlist/screens/watchlist_screen.dart:36:19 - Unnecessary 'const' keyword. Try removing the keyword. - unnecessary_const
+   info - lib/features/watchlist/screens/watchlist_screen.dart:40:19 - Unnecessary 'const' keyword. Try removing the keyword. - unnecessary_const
+   info - lib/features/watchlist/screens/watchlist_screen.dart:41:19 - Unnecessary 'const' keyword. Try removing the keyword. - unnecessary_const
+
+12 issues found.
