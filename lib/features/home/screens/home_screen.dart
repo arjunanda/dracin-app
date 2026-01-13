@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../series/screens/series_episodes_screen.dart';
 import '../../series/screens/series_shorts_screen.dart';
 import '../providers/series_provider.dart';
 import '../models/series_model.dart';
