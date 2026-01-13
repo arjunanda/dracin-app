@@ -8,18 +8,30 @@ class VideoSource {
   const VideoSource({required this.label, required this.url});
 }
 
+class SubtitleSource {
+  final String label;
+  final String url;
+  const SubtitleSource({required this.label, required this.url});
+}
+
 class CustomVideoPlayer extends StatefulWidget {
   final List<VideoSource> sources;
+  final List<SubtitleSource>? subtitles;
   final bool autoPlay;
   final double aspectRatio;
   final BoxFit fit;
+  final bool showDefaultProgressBar;
+  final Function(VideoPlayerController)? onControllerInitialized;
 
   const CustomVideoPlayer({
     super.key,
     required this.sources,
+    this.subtitles,
     this.autoPlay = false,
     this.aspectRatio = 16 / 9,
     this.fit = BoxFit.contain,
+    this.showDefaultProgressBar = true,
+    this.onControllerInitialized,
   });
 
   @override
@@ -32,6 +44,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
   bool _showControls = false;
   Timer? _hideTimer;
   int _currentSourceIndex = 0;
+  int _selectedSubtitleIndex = -1; // -1 means Off
   bool _isAutoQuality = true; // Auto quality mode by default
   String _detectedQuality = 'Auto'; // Current detected quality
 
@@ -107,6 +120,12 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
         _isInitialized = true;
         _detectedQuality = widget.sources[_currentSourceIndex].label;
       });
+
+      if (widget.onControllerInitialized != null) {
+        Future.microtask(() {
+          if (mounted) widget.onControllerInitialized!(_controller!);
+        });
+      }
 
       debugPrint('🎬 CustomVideoPlayer: Ready! Quality: $_detectedQuality');
     } on TimeoutException catch (e) {
@@ -233,11 +252,15 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
         debugPrint(
           '🎬 CustomVideoPlayer: AutoPlay changed to ${widget.autoPlay}',
         );
-        if (widget.autoPlay) {
-          _controller!.play();
-        } else {
-          _controller!.pause();
-        }
+        Future.microtask(() {
+          if (_controller != null && _isInitialized) {
+            if (widget.autoPlay) {
+              _controller!.play();
+            } else {
+              _controller!.pause();
+            }
+          }
+        });
       }
     }
   }
@@ -354,12 +377,13 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
                     ),
 
                     // Bottom Progress Bar
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: _buildProgressBar(),
-                    ),
+                    if (widget.showDefaultProgressBar)
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: _buildProgressBar(),
+                      ),
                   ],
                 ),
               ),
@@ -481,101 +505,96 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF1C1C1E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Video Quality',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Auto Quality Option
-            ListTile(
-              leading: Icon(
-                Icons.auto_awesome,
-                color: _isAutoQuality ? Colors.red : Colors.white,
-              ),
-              title: Text(
-                'Auto',
-                style: TextStyle(
-                  color: _isAutoQuality ? Colors.red : Colors.white,
-                  fontWeight: _isAutoQuality
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
-              subtitle: _isAutoQuality
-                  ? Text(
-                      'Currently: ${widget.sources[_currentSourceIndex].label}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    )
-                  : null,
-              trailing: _isAutoQuality
-                  ? const Icon(Icons.check, color: Colors.red)
-                  : null,
+      isScrollControlled: true,
+      builder: (context) => _buildPremiumBottomSheet(
+        context: context,
+        title: 'Video Quality',
+        icon: Icons.high_quality,
+        onBack: () {
+          Navigator.pop(context);
+          _showMoreOptions(context);
+        },
+        children: [
+          _buildMenuOption(
+            icon: Icons.auto_awesome,
+            label: 'Auto',
+            subtitle: _isAutoQuality ? 'Currently: ${_detectedQuality}' : null,
+            isSelected: _isAutoQuality,
+            onTap: () {
+              Navigator.pop(context);
+              _enableAutoQuality();
+            },
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Divider(color: Colors.white10),
+          ),
+          ...List.generate(widget.sources.length, (index) {
+            final source = widget.sources[index];
+            final isSelected = index == _currentSourceIndex && !_isAutoQuality;
+            return _buildMenuOption(
+              icon: Icons.hd_outlined,
+              label: source.label,
+              isSelected: isSelected,
               onTap: () {
                 Navigator.pop(context);
-                _enableAutoQuality();
+                _changeQuality(index);
               },
-            ),
-            const Divider(color: Colors.white24),
-            // Manual Quality Options
-            ...List.generate(widget.sources.length, (index) {
-              final source = widget.sources[index];
-              final isSelected =
-                  index == _currentSourceIndex && !_isAutoQuality;
+            );
+          }),
+        ],
+      ),
+    );
+  }
 
-              return ListTile(
-                leading: Icon(
-                  Icons.hd,
-                  color: isSelected ? Colors.red : Colors.white,
-                ),
-                title: Text(
-                  source.label,
-                  style: TextStyle(
-                    color: isSelected ? Colors.red : Colors.white,
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                  ),
-                ),
-                trailing: isSelected
-                    ? const Icon(Icons.check, color: Colors.red)
-                    : null,
-                onTap: () {
-                  Navigator.pop(context);
-                  _changeQuality(index);
-                },
-              );
-            }),
-            const SizedBox(height: 20),
-          ],
-        ),
+  void _showSubtitleMenu(BuildContext context) {
+    if (widget.subtitles == null || widget.subtitles!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No subtitles available for this video')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _buildPremiumBottomSheet(
+        context: context,
+        title: 'Subtitles',
+        icon: Icons.subtitles,
+        onBack: () {
+          Navigator.pop(context);
+          _showMoreOptions(context);
+        },
+        children: [
+          _buildMenuOption(
+            icon: Icons.subtitles_off_outlined,
+            label: 'Off',
+            isSelected: _selectedSubtitleIndex == -1,
+            onTap: () {
+              setState(() => _selectedSubtitleIndex = -1);
+              Navigator.pop(context);
+            },
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Divider(color: Colors.white10),
+          ),
+          ...List.generate(widget.subtitles!.length, (index) {
+            final sub = widget.subtitles![index];
+            final isSelected = index == _selectedSubtitleIndex;
+            return _buildMenuOption(
+              icon: Icons.language,
+              label: sub.label,
+              isSelected: isSelected,
+              onTap: () {
+                setState(() => _selectedSubtitleIndex = index);
+                Navigator.pop(context);
+              },
+            );
+          }),
+        ],
       ),
     );
   }
@@ -584,49 +603,204 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF1C1C1E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      isScrollControlled: true,
+      builder: (context) => _buildPremiumBottomSheet(
+        context: context,
+        title: 'Settings',
+        icon: Icons.settings,
+        children: [
+          _buildMenuOption(
+            icon: Icons.hd,
+            label: 'Quality',
+            trailing: Text(
+              _isAutoQuality
+                  ? 'Auto (${_detectedQuality})'
+                  : widget.sources[_currentSourceIndex].label,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 14,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              _showQualityMenu(context);
+            },
+          ),
+          _buildMenuOption(
+            icon: Icons.subtitles,
+            label: 'Subtitles',
+            trailing: Text(
+              _selectedSubtitleIndex == -1
+                  ? 'Off'
+                  : widget.subtitles![_selectedSubtitleIndex].label,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 14,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              _showSubtitleMenu(context);
+            },
+          ),
+          _buildMenuOption(
+            icon: Icons.speed,
+            label: 'Playback Speed',
+            trailing: Text(
+              'Normal',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 14,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: Implement speed menu
+            },
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Divider(color: Colors.white10),
+          ),
+          _buildMenuOption(
+            icon: Icons.report_problem_outlined,
+            label: 'Report Issue',
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: Implement report
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumBottomSheet({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+    VoidCallback? onBack,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF121212),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                if (onBack != null)
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                    onPressed: onBack,
+                  )
+                else
+                  const SizedBox(width: 48),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, color: Colors.white, size: 22),
+                      const SizedBox(width: 12),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 48), // Spacer to balance the back button
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 32),
+              child: Column(children: children),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuOption({
+    required IconData icon,
+    required String label,
+    String? subtitle,
+    Widget? trailing,
+    bool isSelected = false,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.red.withOpacity(0.1)
+                : Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: isSelected ? Colors.red : Colors.white.withOpacity(0.8),
+            size: 22,
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: const Icon(Icons.speed, color: Colors.white),
-              title: const Text(
-                'Playback Speed',
-                style: TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement playback speed
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.report, color: Colors.white),
-              title: const Text(
-                'Report',
-                style: TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement report
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
+        title: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.red : Colors.white,
+            fontSize: 16,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
         ),
+        subtitle: subtitle != null
+            ? Text(
+                subtitle,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 12,
+                ),
+              )
+            : null,
+        trailing:
+            trailing ??
+            (isSelected
+                ? const Icon(Icons.check_circle, color: Colors.red, size: 22)
+                : null),
       ),
     );
   }

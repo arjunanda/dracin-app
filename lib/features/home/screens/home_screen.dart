@@ -16,6 +16,13 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scrollController = ScrollController();
+  int _selectedCategoryIndex = 0;
+  final List<String> _categories = [
+    'Trending Now',
+    'Terbaru',
+    'Rekomendasi',
+    'Top Rated',
+  ];
 
   @override
   void initState() {
@@ -32,9 +39,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(seriesProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark
+      backgroundColor: isDark
           ? AppColors.darkBackground
           : AppColors.lightBackground,
       body: CustomScrollView(
@@ -47,6 +55,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
                 fontSize: 24,
                 color: AppColors.accent,
+                fontWeight: FontWeight.bold,
               ),
             ),
             backgroundColor: Colors.transparent,
@@ -63,14 +72,84 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           CupertinoSliverRefreshControl(
             onRefresh: () =>
                 ref.read(seriesProvider.notifier).getSeries(refresh: true),
-          ), // Top banner-only layout: show a single large banner for the first series
-          ..._buildSections(context, state.series),
+          ),
+          SliverToBoxAdapter(child: _buildCategorySelector(isDark)),
+          ..._buildSelectedSection(context, state.series),
         ],
       ),
     );
   }
 
-  List<Widget> _buildSections(BuildContext context, List<Series> series) {
+  Widget _buildCategorySelector(bool isDark) {
+    return SizedBox(
+      height: 60,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        itemCount: _categories.length,
+        itemBuilder: (context, index) {
+          final isSelected = _selectedCategoryIndex == index;
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedCategoryIndex = index;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.accent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.accent
+                        : Colors.grey.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.accent.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : [],
+                ),
+                child: Center(
+                  child: Text(
+                    _categories[index],
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.black
+                          : (isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary),
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  List<Widget> _buildSelectedSection(
+    BuildContext context,
+    List<Series> series,
+  ) {
     if (series.isEmpty) {
       return [
         SliverToBoxAdapter(
@@ -82,134 +161,112 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ];
     }
 
-    final sections = [
-      'Trending Now',
-      'New Releases',
-      'Recommended for You',
-      'Top Rated',
-    ];
-    List<Widget> slivers = [];
+    // For demo purposes, we shuffle or rotate the list to make sections look different
+    // In a real app, we would filter or fetch different data
+    final sectionSeries = List<Series>.from(series)..shuffle();
+    final displaySeries = sectionSeries
+        .toList(); // Show all for the selected category
 
-    for (var i = 0; i < sections.length; i++) {
-      final sectionTitle = sections[i];
-      // For demo purposes, we shuffle or rotate the list to make sections look different
-      // In a real app, we would filter or fetch different data
-      final sectionSeries = List<Series>.from(series)..shuffle();
-      final displaySeries = sectionSeries
-          .take(6)
-          .toList(); // Show top 6 for each section
-
-      slivers.add(
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  sectionTitle,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.accent,
-                    fontSize: 20,
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-              ],
-            ),
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
-        ),
-      );
-
-      slivers.add(
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 0.7,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final s = displaySeries[index];
-              return GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          SeriesShortsScreen(seriesId: s.id, title: s.title),
-                    ),
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final s = displaySeries[index % displaySeries.length];
+            return GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SeriesShortsScreen(seriesId: s.id, title: s.title),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: Image.network(
-                            s.thumbnailUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (c, e, st) =>
-                                Container(color: Colors.grey.shade900),
-                          ),
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black45,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Image.network(
+                          s.thumbnailUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, e, st) =>
+                              Container(color: Colors.grey.shade900),
                         ),
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withOpacity(0.7),
-                                ],
-                                stops: const [0.6, 1.0],
-                              ),
+                      ),
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.8),
+                              ],
+                              stops: const [0.5, 1.0],
                             ),
                           ),
                         ),
-                        Positioned(
-                          left: 8,
-                          right: 8,
-                          bottom: 8,
-                          child: Text(
-                            s.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                          ),
+                      ),
+                      Positioned(
+                        left: 8,
+                        right: 8,
+                        bottom: 8,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              s.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              s.description,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            }, childCount: displaySeries.length),
-          ),
+              ),
+            );
+          }, childCount: displaySeries.length),
         ),
-      );
-    }
-
-    // Add some bottom padding
-    slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 40)));
-
-    return slivers;
+      ),
+      const SliverToBoxAdapter(child: SizedBox(height: 40)),
+    ];
   }
 }

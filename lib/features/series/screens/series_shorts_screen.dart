@@ -5,6 +5,8 @@ import '../../../core/widgets/custom_video_player.dart';
 import '../../../core/services/admob_service.dart';
 import '../providers/episodes_provider.dart';
 import '../../series/models/episode_model.dart';
+import '../screens/series_episodes_screen.dart';
+import 'package:video_player/video_player.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
@@ -33,10 +35,26 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
   void initState() {
     super.initState();
     // Force refresh episodes to get new HLS URLs
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.invalidate(episodesProvider(widget.seriesId));
       // Preload first ad
-      _adMobService.loadInterstitialAd();
+      await _adMobService.loadRewardedAd();
+
+      // Show initial ad
+      if (_adManager.shouldShowAd()) {
+        setState(() => _isLoadingAd = true);
+        final shown = await _adMobService.showRewardedAd(
+          onUserEarnedReward: (reward) {
+            debugPrint(
+              '🎁 User earned reward: ${reward.amount} ${reward.type}',
+            );
+          },
+        );
+        if (shown) {
+          _adManager.onAdShown();
+        }
+        setState(() => _isLoadingAd = false);
+      }
     });
   }
 
@@ -71,12 +89,18 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                         _currentIndex = index;
                       });
 
-                      // Check if we should show an ad
-                      if (!_isLoadingAd && _adManager.shouldShowAd(index)) {
+                      // Check if we should show an ad (time-based)
+                      if (!_isLoadingAd && _adManager.shouldShowAd()) {
                         setState(() => _isLoadingAd = true);
-                        final shown = await _adMobService.showInterstitialAd();
+                        final shown = await _adMobService.showRewardedAd(
+                          onUserEarnedReward: (reward) {
+                            debugPrint(
+                              '🎁 User earned reward: ${reward.amount} ${reward.type}',
+                            );
+                          },
+                        );
                         if (shown) {
-                          _adManager.onAdShown(index);
+                          _adManager.onAdShown();
                         }
                         setState(() => _isLoadingAd = false);
                       }
@@ -86,71 +110,75 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                       return _ShortVideoItem(
                         episode: episode,
                         shouldPlay: index == _currentIndex && !_isLoadingAd,
+                        totalEpisodes: episodes.length,
+                        seriesId: widget.seriesId,
+                        seriesTitle: widget.title,
                       );
                     },
                   ),
                 ),
 
+          // Top Gradient Overlay (Subtle)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 120,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black.withOpacity(0.5), Colors.transparent],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
           // Back Button & Title Overlay
           Positioned(
             top: 40,
             left: 16,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
-                  size: 28,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 45,
-            left: 70,
             right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.black.withOpacity(0.3),
-                    Colors.transparent,
-                  ],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                episodes.isNotEmpty && _currentIndex < episodes.length
-                    ? 'Episode ${episodes[_currentIndex].episodeNumber}'
-                    : widget.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black,
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: IgnorePointer(
+                    child: Text(
+                      episodes.isNotEmpty && _currentIndex < episodes.length
+                          ? 'Episode ${episodes[_currentIndex].episodeNumber}'
+                          : widget.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    Shadow(
-                      color: Colors.black,
-                      blurRadius: 4,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
+                // Add a spacer to ensure we don't overlap with the player's top-right buttons
+                const SizedBox(width: 120),
+              ],
             ),
           ),
         ],
@@ -162,14 +190,26 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
 class _ShortVideoItem extends StatefulWidget {
   final Episode episode;
   final bool shouldPlay;
+  final int totalEpisodes;
+  final String seriesId;
+  final String seriesTitle;
 
-  const _ShortVideoItem({required this.episode, required this.shouldPlay});
+  const _ShortVideoItem({
+    required this.episode,
+    required this.shouldPlay,
+    required this.totalEpisodes,
+    required this.seriesId,
+    required this.seriesTitle,
+  });
 
   @override
   State<_ShortVideoItem> createState() => _ShortVideoItemState();
 }
 
 class _ShortVideoItemState extends State<_ShortVideoItem> {
+  VideoPlayerController? _videoController;
+  bool _isLiked = false;
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -179,101 +219,300 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
           child: CustomVideoPlayer(
             key: ValueKey(widget.episode.id),
             sources: [VideoSource(label: 'Auto', url: widget.episode.videoUrl)],
+            subtitles: const [
+              SubtitleSource(label: 'Indonesia', url: ''),
+              SubtitleSource(label: 'English', url: ''),
+            ],
             autoPlay: widget.shouldPlay,
             aspectRatio: 9 / 16,
             fit: BoxFit.cover,
+            showDefaultProgressBar: false,
+            onControllerInitialized: (controller) {
+              setState(() {
+                _videoController = controller;
+              });
+            },
           ),
         ),
 
-        // Top Gradient Overlay
+        // Side Actions (TikTok Style)
         Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 120,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.6),
-                  Colors.black.withOpacity(0.3),
-                  Colors.transparent,
-                ],
+          right: 12,
+          bottom: 120,
+          child: Column(
+            children: [
+              _buildSideAction(
+                icon: _isLiked ? Icons.favorite : Icons.favorite_border,
+                label: '1.2k',
+                color: _isLiked ? Colors.red : Colors.white,
+                onTap: () {
+                  setState(() {
+                    _isLiked = !_isLiked;
+                  });
+                },
               ),
-            ),
+              const SizedBox(height: 20),
+              _buildSideAction(
+                icon: Icons.share,
+                label: 'Share',
+                color: Colors.white,
+                onTap: () {
+                  // TODO: Implement share
+                },
+              ),
+            ],
           ),
         ),
 
-        // Bottom Gradient Overlay
+        // Episode Info (Bottom)
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
-          height: 150,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  Colors.black.withOpacity(0.8),
-                  Colors.black.withOpacity(0.5),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Episode Info (Bottom) - No container, just text with shadow
-        Positioned(
-          bottom: 60,
-          left: 20,
-          right: 80,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Episode ${widget.episode.episodeNumber}',
-                style: TextStyle(
-                  color: AppColors.accent,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withOpacity(0.8),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Episode ${widget.episode.episodeNumber}',
+                  style: TextStyle(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.8),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                widget.episode.title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withOpacity(0.8),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  widget.episode.title,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.8),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 16),
+              // Custom Progress Bar & Total Episodes Container
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Background Container for Total Episodes (Not clickable)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Only this part is clickable
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => SeriesEpisodesScreen(
+                                  seriesId: widget.seriesId,
+                                  title: widget.seriesTitle,
+                                  thumbnailUrl: '',
+                                ),
+                              ),
+                            );
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.video_library,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Total ${widget.totalEpisodes} Episode',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.chevron_right,
+                                color: Colors.white70,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                      ],
+                    ),
+                  ),
+                  // Interactive Progress Bar (Slidable & Clickable)
+                  if (_videoController != null)
+                    Positioned(
+                      top: -16, // Moved lower as requested
+                      left: -15,
+                      right: -15,
+                      child: _buildCustomProgressBar(),
+                    ),
+                ],
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSideAction({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 30),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              shadows: [
+                Shadow(
+                  color: Colors.black,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomProgressBar() {
+    return _InteractiveProgressBar(
+      key: ValueKey(widget.episode.id),
+      controller: _videoController!,
+      accentColor: AppColors.accent,
+    );
+  }
+}
+
+class _InteractiveProgressBar extends StatefulWidget {
+  final VideoPlayerController controller;
+  final Color accentColor;
+
+  const _InteractiveProgressBar({
+    super.key,
+    required this.controller,
+    required this.accentColor,
+  });
+
+  @override
+  State<_InteractiveProgressBar> createState() =>
+      _InteractiveProgressBarState();
+}
+
+class _InteractiveProgressBarState extends State<_InteractiveProgressBar> {
+  bool _isDragging = false;
+  double _dragValue = 0.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: widget.controller,
+      builder: (context, VideoPlayerValue value, child) {
+        if (!value.isInitialized) return const SizedBox.shrink();
+
+        final duration = value.duration.inMilliseconds.toDouble();
+        final position = value.position.inMilliseconds.toDouble();
+        final progress = duration > 0 ? position / duration : 0.0;
+
+        return SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 4,
+            thumbShape: const RoundSliderThumbShape(
+              enabledThumbRadius: 6,
+              elevation: 4,
+            ),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+            activeTrackColor: widget.accentColor,
+            inactiveTrackColor: Colors.white.withOpacity(0.2),
+            thumbColor: widget.accentColor,
+            overlayColor: widget.accentColor.withOpacity(0.2),
+            trackShape: const RectangularSliderTrackShape(),
+          ),
+          child: Slider(
+            value: (_isDragging ? _dragValue : progress).clamp(0.0, 1.0),
+            onChangeStart: (val) {
+              setState(() {
+                _isDragging = true;
+                _dragValue = val;
+              });
+            },
+            onChanged: (val) {
+              setState(() {
+                _dragValue = val;
+              });
+            },
+            onChangeEnd: (val) {
+              final newPosition = Duration(
+                milliseconds: (val * duration).toInt(),
+              );
+              widget.controller.seekTo(newPosition).then((_) {
+                if (mounted) {
+                  setState(() {
+                    _isDragging = false;
+                  });
+                }
+              });
+            },
+          ),
+        );
+      },
     );
   }
 }
