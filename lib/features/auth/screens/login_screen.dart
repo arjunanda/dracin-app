@@ -68,9 +68,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               // Social Login Buttons
               _buildSocialButton(
                 label: 'Lanjutkan dengan Google',
-                icon: Icons.g_mobiledata,
-                color: isDark ? Colors.white : Colors.black,
-                textColor: isDark ? Colors.black : Colors.white,
+                logoUrl:
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_Reference_Logo.svg/200px-Google_Reference_Logo.svg.png',
+                color: Colors.white,
+                textColor: Colors.black,
                 onPressed: () {
                   // Implement Google Login
                 },
@@ -78,7 +79,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 16),
               _buildSocialButton(
                 label: 'Lanjutkan dengan Facebook',
-                icon: Icons.facebook,
+                logoUrl:
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Facebook_Logo_2023.png/200px-Facebook_Logo_2023.png',
                 color: const Color(0xFF1877F2),
                 textColor: Colors.white,
                 onPressed: () {
@@ -88,7 +90,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 16),
               _buildSocialButton(
                 label: 'Lanjutkan dengan TikTok',
-                icon: Icons.music_note, // Representative icon for TikTok
+                logoUrl:
+                    'https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/TikTok_logo.svg/256px-TikTok_logo.svg.png',
                 color: Colors.black,
                 textColor: Colors.white,
                 onPressed: () {
@@ -129,27 +132,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Widget _buildSocialButton({
     required String label,
-    required IconData icon,
+    required String logoUrl,
     required Color color,
     required Color textColor,
     required VoidCallback onPressed,
   }) {
-    return ElevatedButton.icon(
+    return ElevatedButton(
       onPressed: onPressed,
-      icon: Icon(icon, color: textColor, size: 28),
-      label: Text(
-        label,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-        ),
-      ),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        foregroundColor: textColor,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+          side: color == Colors.white
+              ? BorderSide(color: Colors.grey.shade300)
+              : BorderSide.none,
+        ),
         elevation: 0,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.network(
+            logoUrl,
+            height: 24,
+            width: 24,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) =>
+                Icon(Icons.login, color: textColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ],
       ),
     );
   }
