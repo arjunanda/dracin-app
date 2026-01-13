@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Brand Colors
-  static const Color primary = Color(0xFF6366F1); // Electric Indigo
-  static const Color secondary = Color(0xFFEC4899); // Pinkish
-  static const Color accent = Color(0xFF10B981); // Emerald
+  // Brand Colors - Imperial Dark Romance palette
+  static const Color primary = Color(0xFF9B1B22); // Deep Crimson (primary)
+  static const Color secondary = Color(0xFF6E1A22); // Dark burgundy for accents
+  static const Color accent = Color(0xFFD4AF37); // Gold accent
 
-  // Dark Theme Colors
-  static const Color darkBackground = Color(0xFF0F172A); // Slate 900
-  static const Color darkSurface = Color(0xFF1E293B); // Slate 800
-  static const Color darkTextPrimary = Color(0xFFF8FAFC);
-  static const Color darkTextSecondary = Color(0xFF94A3B8);
+  // Dark Theme Colors (cinematic)
+  static const Color darkBackground = Color(0xFF000000); // Pure black for drama
+  static const Color darkSurface = Color(0xFF0B0B0B); // Slightly lighter than black
+  static const Color darkTextPrimary = Color(0xFFF8F4EF); // Warm off-white
+  static const Color darkTextSecondary = Color(0xFFBFAF8C); // Muted goldish secondary text
 
-  // Light Theme Colors
+  // Light Theme (kept but muted)
   static const Color lightBackground = Color(0xFFF1F5F9); // Slate 100
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightTextPrimary = Color(0xFF0F172A);

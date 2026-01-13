@@ -1,8 +1,7 @@
-import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../series/models/episode_model.dart';
+import '../../../core/widgets/custom_video_player.dart';
 
 class PlayerScreen extends StatefulWidget {
   final Episode episode;
@@ -14,39 +13,13 @@ class PlayerScreen extends StatefulWidget {
 }
 
 class _PlayerScreenState extends State<PlayerScreen> {
-  late BetterPlayerController _betterPlayerController;
-
   @override
   void initState() {
     super.initState();
-    BetterPlayerConfiguration betterPlayerConfiguration =
-        const BetterPlayerConfiguration(
-          aspectRatio: 16 / 9,
-          fit: BoxFit.contain,
-          autoPlay: true,
-          looping: false,
-          deviceOrientationsAfterFullScreen: [DeviceOrientation.portraitUp],
-          controlsConfiguration: BetterPlayerControlsConfiguration(
-            enableSkips: true,
-            enableFullscreen: true,
-            enableMute: true,
-            enableProgressText: true,
-            showControlsOnInitialize: false,
-            backgroundColor: Colors.black26,
-            controlBarColor: Colors.transparent,
-          ),
-        );
-    BetterPlayerDataSource dataSource = BetterPlayerDataSource(
-      BetterPlayerDataSourceType.network,
-      widget.episode.videoUrl,
-    );
-    _betterPlayerController = BetterPlayerController(betterPlayerConfiguration);
-    _betterPlayerController.setupDataSource(dataSource);
   }
 
   @override
   void dispose() {
-    _betterPlayerController.dispose();
     super.dispose();
   }
 
@@ -56,7 +29,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          Center(child: BetterPlayer(controller: _betterPlayerController)),
+          Center(
+            child: CustomVideoPlayer(
+              sources: [
+                VideoSource(label: 'Auto', url: widget.episode.videoUrl),
+              ],
+              autoPlay: true,
+              aspectRatio: 16/9,
+            ),
+          ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -89,7 +70,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         Text(
                           'Episode ${widget.episode.episodeNumber}',
                           style: const TextStyle(
-                            color: AppColors.primary,
+                            color: AppColors.accent,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

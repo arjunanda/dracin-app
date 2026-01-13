@@ -9,22 +9,24 @@ class AppTheme {
       brightness: Brightness.light,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
-        secondary: AppColors.secondary,
+        secondary: AppColors.accent,
         surface: AppColors.lightSurface,
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.lightBackground,
-      textTheme: GoogleFonts.outfitTextTheme().copyWith(
-        displayLarge: GoogleFonts.outfit(
+      // Distinctive typography: Cinzel for headings (cinematic/imperial), Rubik for UI/body
+      textTheme: GoogleFonts.rubikTextTheme().copyWith(
+        displayLarge: GoogleFonts.cinzel(
           color: AppColors.lightTextPrimary,
-          fontWeight: FontWeight.bold,
-          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          fontSize: 34,
+          letterSpacing: 0.6,
         ),
-        bodyLarge: GoogleFonts.outfit(
+        bodyLarge: GoogleFonts.rubik(
           color: AppColors.lightTextPrimary,
           fontSize: 16,
         ),
-        bodyMedium: GoogleFonts.outfit(
+        bodyMedium: GoogleFonts.rubik(
           color: AppColors.lightTextSecondary,
           fontSize: 14,
         ),
@@ -43,26 +45,29 @@ class AppTheme {
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
-        secondary: AppColors.secondary,
+        secondary: AppColors.accent,
         surface: AppColors.darkSurface,
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.darkBackground,
-      textTheme: GoogleFonts.outfitTextTheme().copyWith(
-        displayLarge: GoogleFonts.outfit(
+      // Distinctive typography: Cinzel for headings (cinematic/imperial), Rubik for UI/body
+      textTheme: GoogleFonts.rubikTextTheme().copyWith(
+        displayLarge: GoogleFonts.cinzel(
           color: AppColors.darkTextPrimary,
-          fontWeight: FontWeight.bold,
-          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          fontSize: 36,
+          letterSpacing: 0.8,
         ),
-        bodyLarge: GoogleFonts.outfit(
+        bodyLarge: GoogleFonts.rubik(
           color: AppColors.darkTextPrimary,
           fontSize: 16,
         ),
-        bodyMedium: GoogleFonts.outfit(
+        bodyMedium: GoogleFonts.rubik(
           color: AppColors.darkTextSecondary,
           fontSize: 14,
         ),
       ),
+      appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent, elevation: 0),
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(

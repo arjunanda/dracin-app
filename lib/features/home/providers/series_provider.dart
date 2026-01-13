@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/network/api_client.dart';
 import '../models/series_model.dart';
 import '../services/series_service.dart';
 
 final seriesServiceProvider = Provider<SeriesService>((ref) {
-  final dio = ref.read(apiClientProvider);
-  return SeriesService(dio);
+  // This is a stubbed service for now; it does not need Dio.
+  return SeriesService();
 });
 
 class SeriesListState {

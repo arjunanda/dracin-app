@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
-import 'features/auth/providers/auth_provider.dart';
-import 'features/auth/screens/login_screen.dart';
-import 'features/home/screens/home_screen.dart';
+import 'features/navigation/screens/main_navigation_screen.dart';
+import 'core/services/admob_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize AdMob
+  await AdMobService.initialize();
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -14,27 +18,14 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-
     return MaterialApp(
       title: 'Dracin App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      home: _buildHome(authState),
+      // Default to dark for the Imperial Dark experience
+      themeMode: ThemeMode.dark,
+      home: const MainNavigationScreen(),
     );
-  }
-
-  Widget _buildHome(AuthState authState) {
-    switch (authState.status) {
-      case AuthStatus.authenticated:
-        return const HomeScreen();
-      case AuthStatus.loading:
-      case AuthStatus.initial:
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      case AuthStatus.unauthenticated:
-        return const LoginScreen();
-    }
   }
 }
