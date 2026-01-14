@@ -183,8 +183,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) =>
-                        SeriesShortsScreen(seriesId: s.id, title: s.title),
+                    builder: (_) => SeriesShortsScreen(
+                      seriesId: s.id,
+                      title: s.title,
+                      showBackButton: true,
+                    ),
                   ),
                 );
               },

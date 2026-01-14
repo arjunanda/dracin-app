@@ -11,11 +11,13 @@ import 'package:video_player/video_player.dart';
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
   final String title;
+  final bool showBackButton;
 
   const SeriesShortsScreen({
     super.key,
     required this.seriesId,
     required this.title,
+    this.showBackButton = false,
   });
 
   @override
@@ -140,19 +142,21 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
           // Back Button & Title Overlay
           Positioned(
             top: 40,
-            left: 16,
+            left: widget.showBackButton ? 8 : 20,
             right: 16,
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.white,
-                    size: 28,
+                if (widget.showBackButton) ...[
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 4),
+                ],
                 Expanded(
                   child: IgnorePointer(
                     child: Text(

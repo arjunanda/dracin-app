@@ -46,8 +46,20 @@ class SeriesService {
       'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8', // Apple test
       'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', // Tears of Steel
       'https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8', // Big Buck Bunny HLS
-      'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', // Repeat for more episodes
     ];
+
+    if (seriesId == 'fyp') {
+      return List.generate(10, (i) {
+        final randomSeriesId = (i + 100).toString();
+        return Episode(
+          id: 'fyp-$i',
+          seriesId: randomSeriesId,
+          title: 'FYP Video ${i + 1}: Trending Content',
+          episodeNumber: i + 1,
+          videoUrl: hlsStreams[i % hlsStreams.length],
+        );
+      });
+    }
 
     return List.generate(6, (i) {
       return Episode(
