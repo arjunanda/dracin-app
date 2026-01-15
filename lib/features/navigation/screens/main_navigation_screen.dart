@@ -29,7 +29,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   void _onTabTapped(int index) {
     setState(() {
       _currentIndex = index;
-      // If switching to FYP, generate a new key to force reload
       if (index == 1) {
         _fypKey = UniqueKey();
       }

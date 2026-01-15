@@ -19,7 +19,7 @@ class SeriesService {
         description:
             'A short description for sample show $id. Enjoy the preview!',
         thumbnailUrl: 'https://picsum.photos/seed/series_$id/800/1200',
-        episodesCount: 8 + (i % 10),
+        episodesCount: 15,
         isLoved: false,
       );
     });
@@ -32,7 +32,7 @@ class SeriesService {
       title: 'Sample Show $id',
       description: 'A short description for sample show $id. Full detail page.',
       thumbnailUrl: 'https://picsum.photos/seed/series_$id/800/1200',
-      episodesCount: 12,
+      episodesCount: 15,
     );
   }
 
@@ -49,7 +49,7 @@ class SeriesService {
     ];
 
     if (seriesId == 'fyp') {
-      return List.generate(10, (i) {
+      return List.generate(15, (i) {
         final randomSeriesId = (i + 100).toString();
         return Episode(
           id: 'fyp-$i',
@@ -61,7 +61,7 @@ class SeriesService {
       });
     }
 
-    return List.generate(6, (i) {
+    return List.generate(15, (i) {
       return Episode(
         id: '$seriesId-ep-${i + 1}',
         seriesId: seriesId,

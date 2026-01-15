@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/foundation.dart';
 
@@ -103,44 +104,40 @@ class AdMobService {
 
 /// Helper class to manage ad display logic for shorts/reels
 class ShortsAdManager {
-  DateTime? _nextAdAllowedAt;
-  bool _isFirstAd = true;
+  int _adsShownCount = 0;
+  int _lastAdVideoIndex = -1;
+  int _nextAdTriggerIndex = 9; // First ad at 10th slide (index 9)
+  final Random _random = Random();
 
   ShortsAdManager() {
-    // First ad is allowed immediately
-    _nextAdAllowedAt = DateTime.now();
+    reset();
   }
 
-  /// Check if ad should be shown based on time cooldown
-  bool shouldShowAd() {
-    if (_isFirstAd) return true;
-
-    if (_nextAdAllowedAt == null) return false;
-
-    final now = DateTime.now();
-    final shouldShow = now.isAfter(_nextAdAllowedAt!);
-
-    if (!shouldShow) {
-      final remaining = _nextAdAllowedAt!.difference(now).inSeconds;
-      debugPrint('📱 Ad cooldown: $remaining seconds remaining');
-    }
-
-    return shouldShow;
+  /// Check if ad should be shown based on slide count
+  bool shouldShowAd(int currentVideoIndex) {
+    // Show ad if we reached the next trigger index and haven't shown an ad for this index yet
+    return currentVideoIndex >= _nextAdTriggerIndex &&
+        _lastAdVideoIndex != currentVideoIndex;
   }
 
   /// Update after showing an ad
-  void onAdShown() {
-    _isFirstAd = false;
-    // Next ad allowed after 2 minutes
-    _nextAdAllowedAt = DateTime.now().add(const Duration(minutes: 2));
+  void onAdShown(int currentVideoIndex) {
+    _adsShownCount++;
+    _lastAdVideoIndex = currentVideoIndex;
+
+    // Schedule next ad: random 5-10 slides from current index
+    final interval = _random.nextInt(6) + 5; // 5 to 10
+    _nextAdTriggerIndex = currentVideoIndex + interval;
+
     debugPrint(
-      '📱 Next ad scheduled at $_nextAdAllowedAt (2 minutes cooldown)',
+      '📱 Ad $_adsShownCount shown at index $currentVideoIndex. Next ad scheduled at index $_nextAdTriggerIndex (interval: $interval)',
     );
   }
 
   /// Reset the manager
   void reset() {
-    _isFirstAd = true;
-    _nextAdAllowedAt = DateTime.now();
+    _adsShownCount = 0;
+    _lastAdVideoIndex = -1;
+    _nextAdTriggerIndex = 9; // Reset to 10th slide
   }
 }
