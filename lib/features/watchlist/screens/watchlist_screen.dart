@@ -2,7 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../home/models/series_model.dart';
+
 import '../../series/screens/series_shorts_screen.dart';
 
 class WatchlistScreen extends ConsumerWidget {
@@ -51,6 +53,7 @@ class WatchlistScreen extends ConsumerWidget {
     ];
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = ref.watch(languageProvider);
 
     return Scaffold(
       backgroundColor: isDark
@@ -89,7 +92,7 @@ class WatchlistScreen extends ConsumerWidget {
                     vertical: 16,
                   ),
                   title: Text(
-                    'My Watchlist',
+                    AppStrings.get('my_watchlist', lang),
                     style: TextStyle(
                       color: AppColors.accent,
                       fontWeight: FontWeight.w900,
@@ -97,12 +100,16 @@ class WatchlistScreen extends ConsumerWidget {
                       letterSpacing: -1,
                     ),
                   ),
+
                   background: Container(
                     padding: const EdgeInsets.only(left: 20, top: 75),
                     child: Text(
-                      'You have ${watchlist.length} dramas to catch up on',
+                      AppStrings.get(
+                        'watchlist_subtitle',
+                        lang,
+                      ).replaceAll('{count}', watchlist.length.toString()),
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withAlpha((0.4 * 255).toInt()),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -113,7 +120,7 @@ class WatchlistScreen extends ConsumerWidget {
 
               // Watchlist Content
               if (watchlist.isEmpty)
-                SliverFillRemaining(child: _buildEmptyState(context))
+                SliverFillRemaining(child: _buildEmptyState(context, lang))
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
@@ -144,7 +151,7 @@ class WatchlistScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, AppLanguage lang) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -152,19 +159,19 @@ class WatchlistScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: Colors.white.withAlpha((0.03 * 255).toInt()),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.bookmark_border_rounded,
               size: 80,
-              color: AppColors.accent.withOpacity(0.2),
+              color: AppColors.accent.withAlpha((0.2 * 255).toInt()),
             ),
           ),
           const SizedBox(height: 32),
-          const Text(
-            'Nothing to watch?',
-            style: TextStyle(
+          Text(
+            AppStrings.get('empty_watchlist_title', lang),
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: Colors.white,
@@ -173,10 +180,10 @@ class WatchlistScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Your watchlist is feeling a bit lonely.\nTime to find your next obsession!',
+            AppStrings.get('empty_watchlist_subtitle', lang),
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withAlpha((0.4 * 255).toInt()),
               fontSize: 15,
               height: 1.4,
             ),
@@ -189,14 +196,14 @@ class WatchlistScreen extends ConsumerWidget {
               foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
               elevation: 10,
-              shadowColor: AppColors.accent.withOpacity(0.4),
+              shadowColor: AppColors.accent.withAlpha((0.4 * 255).toInt()),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Text(
-              'Explore Dramas',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+            child: Text(
+              AppStrings.get('explore_dramas', lang),
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
             ),
           ),
         ],

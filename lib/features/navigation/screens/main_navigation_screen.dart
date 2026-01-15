@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../home/screens/home_screen.dart';
 import '../../home/screens/for_you_screen.dart';
 import '../../watchlist/screens/watchlist_screen.dart';
 import '../../profile/screens/profile_screen.dart';
-import '../../auth/screens/login_screen.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({super.key});
@@ -27,20 +27,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   ];
 
   void _onTabTapped(int index) {
-    // If Profile tab (index 3) is tapped, navigate to login
-    // if (index == 3) {
-    //   Navigator.of(
-    //     context,
-    //   ).push(MaterialPageRoute(builder: (context) => const LoginScreen()));
-    // } else {
-    //   setState(() {
-    //     _currentIndex = index;
-    //     // If switching to FYP, generate a new key to force reload
-    //     if (index == 1) {
-    //       _fypKey = UniqueKey();
-    //     }
-    //   });
-    // }
     setState(() {
       _currentIndex = index;
       // If switching to FYP, generate a new key to force reload
@@ -52,6 +38,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
+
     return Scaffold(
       body: _currentIndex == 1
           ? ForYouScreen(key: _fypKey)
@@ -66,17 +54,23 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         selectedItemColor: AppColors.accent,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.explore), // Or another icon for "For You"
-            label: 'For You',
+            icon: const Icon(Icons.home),
+            label: AppStrings.get('home', lang),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark),
-            label: 'WatchList',
+            icon: const Icon(Icons.explore),
+            label: AppStrings.get('for_you', lang),
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.bookmark),
+            label: AppStrings.get('watchlist', lang),
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.person),
+            label: AppStrings.get('profile', lang),
+          ),
         ],
       ),
     );

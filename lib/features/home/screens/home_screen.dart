@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
+
 import '../../series/screens/series_shorts_screen.dart';
 import '../providers/series_provider.dart';
 import 'search_screen.dart';
@@ -17,12 +19,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scrollController = ScrollController();
   int _selectedCategoryIndex = 0;
-  final List<String> _categories = [
-    'Trending Now',
-    'Terbaru',
-    'Rekomendasi',
-    'Top Rated',
-  ];
+  List<String> _getCategories(AppLanguage lang) {
+    return [
+      AppStrings.get('trending', lang),
+      AppStrings.get('latest', lang),
+      AppStrings.get('recommended', lang),
+      AppStrings.get('top_rated', lang),
+    ];
+  }
 
   @override
   void initState() {
@@ -40,6 +44,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(seriesProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = ref.watch(languageProvider);
+    final categories = _getCategories(lang);
 
     return Scaffold(
       backgroundColor: isDark
@@ -77,20 +83,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onRefresh: () =>
                 ref.read(seriesProvider.notifier).getSeries(refresh: true),
           ),
-          SliverToBoxAdapter(child: _buildCategorySelector(isDark)),
+          SliverToBoxAdapter(child: _buildCategorySelector(isDark, categories)),
           ..._buildSelectedSection(context, state.series),
         ],
       ),
     );
   }
 
-  Widget _buildCategorySelector(bool isDark) {
+  Widget _buildCategorySelector(bool isDark, List<String> categories) {
     return SizedBox(
       height: 60,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        itemCount: _categories.length,
+        itemCount: categories.length,
         itemBuilder: (context, index) {
           final isSelected = _selectedCategoryIndex == index;
           return Padding(
@@ -128,7 +134,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 child: Center(
                   child: Text(
-                    _categories[index],
+                    categories[index],
+
                     style: TextStyle(
                       color: isSelected
                           ? Colors.black

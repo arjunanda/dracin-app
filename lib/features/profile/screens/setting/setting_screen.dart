@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_provider.dart';
+import '../../../../core/localization/language_provider.dart';
 
 class SettingScreen extends ConsumerWidget {
   const SettingScreen({super.key});
@@ -9,6 +10,7 @@ class SettingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = ref.watch(languageProvider);
 
     return Scaffold(
       backgroundColor: isDark
@@ -16,7 +18,7 @@ class SettingScreen extends ConsumerWidget {
           : AppColors.lightBackground,
       appBar: AppBar(
         title: Text(
-          'Settings',
+          AppStrings.get('settings', lang),
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: isDark ? Colors.white : Colors.black,
@@ -31,14 +33,18 @@ class SettingScreen extends ConsumerWidget {
       ),
       body: ListView(
         children: [
-          _buildSectionHeader(context, 'Preferences'),
+          _buildSectionHeader(context, AppStrings.get('preferences', lang)),
           _buildSettingTile(
             context,
             icon: Icons.dark_mode_outlined,
-            title: 'Theme',
-            subtitle: 'Switch between light and dark mode',
+            title: AppStrings.get('theme', lang),
+            subtitle: lang == AppLanguage.id
+                ? 'Ganti antara mode terang dan gelap'
+                : 'Switch between light and dark mode',
             trailing: Text(
-              isDark ? 'Dark' : 'Light',
+              isDark
+                  ? (lang == AppLanguage.id ? 'Gelap' : 'Dark')
+                  : (lang == AppLanguage.id ? 'Terang' : 'Light'),
               style: TextStyle(
                 color: AppColors.accent,
                 fontWeight: FontWeight.w600,
@@ -56,46 +62,58 @@ class SettingScreen extends ConsumerWidget {
           _buildSettingTile(
             context,
             icon: Icons.notifications_none_outlined,
-            title: 'Notifications',
-            subtitle: 'Manage your app alerts',
+            title: AppStrings.get('notifications', lang),
+            subtitle: lang == AppLanguage.id
+                ? 'Atur peringatan aplikasi Anda'
+                : 'Manage your app alerts',
             onTap: () {},
           ),
           _buildSettingTile(
             context,
             icon: Icons.language_outlined,
-            title: 'Language',
-            subtitle: 'Choose your preferred language',
-            trailing: const Text(
-              'Bahasa',
+            title: AppStrings.get('language', lang),
+            subtitle: lang == AppLanguage.id
+                ? 'Pilih bahasa pilihan Anda'
+                : 'Choose your preferred language',
+            trailing: Text(
+              lang == AppLanguage.id ? 'Bahasa Indonesia' : 'English',
               style: TextStyle(
                 color: AppColors.accent,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            onTap: () {},
+            onTap: () {
+              ref.read(languageProvider.notifier).state = lang == AppLanguage.id
+                  ? AppLanguage.en
+                  : AppLanguage.id;
+            },
           ),
           const Divider(height: 32, indent: 16, endIndent: 16),
-          _buildSectionHeader(context, 'Support'),
+          _buildSectionHeader(context, AppStrings.get('support', lang)),
           _buildSettingTile(
             context,
             icon: Icons.help_outline,
-            title: 'Help Center',
-            subtitle: 'Find answers to common questions',
+            title: AppStrings.get('help_center', lang),
+            subtitle: lang == AppLanguage.id
+                ? 'Cari jawaban untuk pertanyaan umum'
+                : 'Find answers to common questions',
             onTap: () {},
           ),
           _buildSettingTile(
             context,
             icon: Icons.info_outline,
-            title: 'About Dracin',
-            subtitle: 'App version, terms, and privacy',
+            title: AppStrings.get('about_dracin', lang),
+            subtitle: lang == AppLanguage.id
+                ? 'Versi aplikasi, ketentuan, dan privasi'
+                : 'App version, terms, and privacy',
             onTap: () {},
           ),
           const SizedBox(height: 40),
           Center(
             child: Text(
-              'Version 1.0.0',
+              '${AppStrings.get('version', lang)} 1.0.0',
               style: TextStyle(
-                color: Colors.grey.withOpacity(0.5),
+                color: Colors.grey.withAlpha((0.5 * 255).toInt()),
                 fontSize: 12,
               ),
             ),

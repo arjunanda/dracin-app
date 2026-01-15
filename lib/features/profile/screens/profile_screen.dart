@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
 import './setting/setting_screen.dart';
@@ -19,6 +20,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final authState = ref.watch(authProvider);
     final isLoggedIn = authState.status == AuthStatus.authenticated;
     final user = authState.user;
+    final lang = ref.watch(languageProvider);
 
     return Scaffold(
       backgroundColor: isDark
@@ -26,7 +28,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           : AppColors.lightBackground,
       appBar: AppBar(
         title: Text(
-          'Profile',
+          AppStrings.get('profile', lang),
           style: Theme.of(context).textTheme.displayLarge?.copyWith(
             fontSize: 24,
             color: AppColors.accent,
@@ -59,7 +61,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     children: [
                       if (isLoggedIn) ...[
                         Text(
-                          user?.name ?? 'Pengguna',
+                          user?.name ??
+                              (lang == AppLanguage.id ? 'Pengguna' : 'User'),
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -85,7 +88,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           child: Row(
                             children: [
                               Text(
-                                'Masuk',
+                                AppStrings.get('login', lang),
                                 style: Theme.of(context).textTheme.titleLarge
                                     ?.copyWith(
                                       fontWeight: FontWeight.bold,
@@ -111,24 +114,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _buildMenuItem(
             context: context,
             icon: Icons.language,
-            title: 'Bahasa',
-            onTap: () {},
+            title: AppStrings.get('language', lang),
+            onTap: () {
+              ref.read(languageProvider.notifier).state = lang == AppLanguage.id
+                  ? AppLanguage.en
+                  : AppLanguage.id;
+            },
           ),
           _buildMenuItem(
             context: context,
             icon: Icons.settings,
-            title: 'Setting',
+            title: AppStrings.get('settings', lang),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => const SettingScreen()),
               );
             },
           ),
-
           _buildMenuItem(
             context: context,
             icon: Icons.help_outline,
-            title: 'Bantuan',
+            title: AppStrings.get('help', lang),
             onTap: () {},
           ),
           if (isLoggedIn) ...[
@@ -136,7 +142,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             _buildMenuItem(
               context: context,
               icon: Icons.logout,
-              title: 'Logout',
+              title: AppStrings.get('logout', lang),
               textColor: Colors.red,
               onTap: () {
                 ref.read(authProvider.notifier).logout();
