@@ -41,6 +41,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         }
       });
     }
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   @override
