@@ -38,25 +38,22 @@ class SettingScreen extends ConsumerWidget {
           _buildSectionHeader(context, AppStrings.get('preferences', lang)),
           _buildSettingTile(
             context,
-            icon: Icons.dark_mode_outlined,
+            icon: isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
             title: AppStrings.get('theme', lang),
             subtitle: lang == AppLanguage.id
                 ? 'Ganti antara mode terang dan gelap'
                 : 'Switch between light and dark mode',
-            trailing: Text(
-              isDark
-                  ? (lang == AppLanguage.id ? 'Gelap' : 'Dark')
-                  : (lang == AppLanguage.id ? 'Terang' : 'Light'),
-              style: TextStyle(
-                color: AppColors.accent,
-                fontWeight: FontWeight.w600,
-              ),
+            trailing: Switch(
+              value: isDark,
+              onChanged: (val) {
+                ref.read(themeProvider.notifier).state = val
+                    ? ThemeMode.dark
+                    : ThemeMode.light;
+              },
+              activeColor: AppColors.accent,
             ),
             onTap: () {
-              final currentTheme = ref.read(themeProvider);
-              ref
-                  .read(themeProvider.notifier)
-                  .state = currentTheme == ThemeMode.dark
+              ref.read(themeProvider.notifier).state = isDark
                   ? ThemeMode.light
                   : ThemeMode.dark;
             },
