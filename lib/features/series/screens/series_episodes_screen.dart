@@ -9,7 +9,12 @@ class SeriesEpisodesScreen extends ConsumerWidget {
   final String title;
   final String thumbnailUrl;
 
-  const SeriesEpisodesScreen({super.key, required this.seriesId, required this.title, required this.thumbnailUrl});
+  const SeriesEpisodesScreen({
+    super.key,
+    required this.seriesId,
+    required this.title,
+    required this.thumbnailUrl,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,11 +22,19 @@ class SeriesEpisodesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title, style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.w700)),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: AppColors.accent,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.accent,
       ),
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.black : Colors.white,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? Colors.black
+          : Colors.white,
       body: episodes.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : ListView.separated(
@@ -33,18 +46,33 @@ class SeriesEpisodesScreen extends ConsumerWidget {
                 return ListTile(
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => PlayerScreen(episode: e)),
+                      MaterialPageRoute(
+                        builder: (_) => PlayerScreen(episode: e),
+                      ),
                     );
                   },
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  tileColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[100],
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color:
+                          (Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black)
+                              .withOpacity(0.1),
+                    ),
+                  ),
                   leading: CircleAvatar(
                     radius: 28,
                     backgroundImage: NetworkImage(thumbnailUrl),
                   ),
                   title: Text('Episode ${e.episodeNumber}: ${e.title}'),
-                  subtitle: e.duration != null ? Text('${(e.duration! / 60).floor()} min') : null,
+                  subtitle: e.duration != null
+                      ? Text('${(e.duration! / 60).floor()} min')
+                      : null,
                   trailing: const Icon(Icons.play_arrow),
                 );
               },

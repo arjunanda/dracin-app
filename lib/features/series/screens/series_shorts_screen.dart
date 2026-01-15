@@ -559,19 +559,18 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isCurrent
-                              ? AppColors.accent
-                              : Colors.white.withOpacity(0.05),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isCurrent
                                 ? AppColors.accent
                                 : Colors.white.withOpacity(0.1),
+                            width: isCurrent ? 2 : 1,
                           ),
                           boxShadow: isCurrent
                               ? [
                                   BoxShadow(
-                                    color: AppColors.accent.withOpacity(0.3),
+                                    color: AppColors.accent.withOpacity(0.2),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -582,8 +581,12 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                         child: Text(
                           '${index + 1}',
                           style: TextStyle(
-                            color: isCurrent ? Colors.black : Colors.white,
-                            fontWeight: FontWeight.bold,
+                            color: isCurrent
+                                ? AppColors.accent
+                                : Colors.white70,
+                            fontWeight: isCurrent
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             fontSize: 16,
                           ),
                         ),

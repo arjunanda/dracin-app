@@ -5,7 +5,7 @@ enum AppLanguage { id, en }
 final languageProvider = StateProvider<AppLanguage>((ref) => AppLanguage.en);
 
 class AppStrings {
-  static Map<String, Map<AppLanguage, String>> _strings = {
+  static final Map<String, Map<AppLanguage, String>> _strings = {
     'settings': {AppLanguage.id: 'Pengaturan', AppLanguage.en: 'Settings'},
     'theme': {AppLanguage.id: 'Tema', AppLanguage.en: 'Theme'},
     'language': {AppLanguage.id: 'Bahasa', AppLanguage.en: 'Language'},

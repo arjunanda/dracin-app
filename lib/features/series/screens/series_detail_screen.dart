@@ -196,8 +196,12 @@ class SeriesDetailScreen extends ConsumerWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.2),
+                      width: 1.5,
+                    ),
                   ),
                   child: Center(
                     child: Text(
