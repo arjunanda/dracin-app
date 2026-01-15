@@ -69,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               _buildSocialButton(
                 label: 'Lanjutkan dengan Google',
                 logoUrl:
-                    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_Reference_Logo.svg/200px-Google_Reference_Logo.svg.png',
+                    'https://logos-world.net/wp-content/uploads/2020/09/Google-Symbol.png',
                 color: Colors.white,
                 textColor: Colors.black,
                 onPressed: () {
@@ -80,7 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               _buildSocialButton(
                 label: 'Lanjutkan dengan Facebook',
                 logoUrl:
-                    'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Facebook_Logo_2023.png/200px-Facebook_Logo_2023.png',
+                    'https://static.vecteezy.com/system/resources/previews/018/930/698/non_2x/facebook-logo-facebook-icon-transparent-free-png.png',
                 color: const Color(0xFF1877F2),
                 textColor: Colors.white,
                 onPressed: () {
@@ -91,7 +91,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               _buildSocialButton(
                 label: 'Lanjutkan dengan TikTok',
                 logoUrl:
-                    'https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/TikTok_logo.svg/256px-TikTok_logo.svg.png',
+                    'https://logospng.org/download/tiktok/logo-tiktok-icone-1536.png',
                 color: Colors.black,
                 textColor: Colors.white,
                 onPressed: () {
