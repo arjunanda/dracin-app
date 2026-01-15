@@ -6,12 +6,15 @@ import '../../../core/services/admob_service.dart';
 import '../providers/episodes_provider.dart';
 import '../../series/models/episode_model.dart';
 import 'package:video_player/video_player.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../../core/localization/language_provider.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
   final String title;
   final String thumbnailUrl;
   final bool showBackButton;
+  final bool enableAds;
 
   const SeriesShortsScreen({
     super.key,
@@ -19,6 +22,7 @@ class SeriesShortsScreen extends ConsumerStatefulWidget {
     required this.title,
     required this.thumbnailUrl,
     this.showBackButton = false,
+    this.enableAds = true,
   });
 
   @override
@@ -40,8 +44,10 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
     // Force refresh episodes to get new HLS URLs
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.invalidate(episodesProvider(widget.seriesId));
-      // Preload first ad
-      await _adMobService.loadRewardedAd();
+      // Preload first ad if enabled
+      if (widget.enableAds) {
+        await _adMobService.loadRewardedAd();
+      }
     });
   }
 
@@ -76,7 +82,9 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                       _adManager.recordScroll(index);
 
                       // Check if we should show an ad (cumulative scrolls)
-                      if (!_isLoadingAd && _adManager.shouldShowAd(index)) {
+                      if (widget.enableAds &&
+                          !_isLoadingAd &&
+                          _adManager.shouldShowAd(index)) {
                         setState(() => _isLoadingAd = true);
                         final shown = await _adMobService.showRewardedAd(
                           onUserEarnedReward: (reward) {
@@ -163,8 +171,8 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                             shadows: [
                               Shadow(
                                 color: Colors.black,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
+                                blurRadius: 4,
+                                offset: Offset(0, 1),
                               ),
                             ],
                           ),
@@ -186,7 +194,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
   }
 }
 
-class _ShortVideoItem extends StatefulWidget {
+class _ShortVideoItem extends ConsumerStatefulWidget {
   final Episode episode;
   final bool shouldPlay;
   final int totalEpisodes;
@@ -204,12 +212,37 @@ class _ShortVideoItem extends StatefulWidget {
   });
 
   @override
-  State<_ShortVideoItem> createState() => _ShortVideoItemState();
+  ConsumerState<_ShortVideoItem> createState() => _ShortVideoItemState();
 }
 
-class _ShortVideoItemState extends State<_ShortVideoItem> {
+class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
+    with TickerProviderStateMixin {
   VideoPlayerController? _videoController;
   bool _isLiked = false;
+  late AnimationController _likeController;
+  late Animation<double> _likeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _likeController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _likeAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.4), weight: 50),
+          TweenSequenceItem(tween: Tween(begin: 1.4, end: 1.0), weight: 50),
+        ]).animate(
+          CurvedAnimation(parent: _likeController, curve: Curves.easeInOut),
+        );
+  }
+
+  @override
+  void dispose() {
+    _likeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -252,10 +285,12 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
                 _buildSideAction(
                   icon: _isLiked ? Icons.favorite : Icons.favorite_border,
                   label: '1.2k',
-                  color: _isLiked ? Colors.red : Colors.white,
+                  color: _isLiked ? const Color(0xFFFFD700) : Colors.white,
+                  animation: _likeAnimation,
                   onTap: () {
                     setState(() {
                       _isLiked = !_isLiked;
+                      _likeController.forward(from: 0.0);
                     });
                   },
                 ),
@@ -264,9 +299,7 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
                   icon: Icons.share,
                   label: 'Share',
                   color: Colors.white,
-                  onTap: () {
-                    // TODO: Implement share
-                  },
+                  onTap: _showShareBottomSheet,
                 ),
               ],
             ),
@@ -294,8 +327,8 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
                       shadows: [
                         Shadow(
                           color: Colors.black.withOpacity(0.8),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
                         ),
                       ],
                     ),
@@ -314,8 +347,8 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
                       shadows: [
                         Shadow(
                           color: Colors.black.withOpacity(0.8),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
                         ),
                       ],
                     ),
@@ -571,6 +604,7 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
     required String label,
     required Color color,
     required VoidCallback onTap,
+    Animation<double>? animation,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -582,7 +616,12 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
               color: Colors.black.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 30),
+            child: animation != null
+                ? ScaleTransition(
+                    scale: animation,
+                    child: Icon(icon, color: color, size: 30),
+                  )
+                : Icon(icon, color: color, size: 30),
           ),
           const SizedBox(height: 4),
           Text(
@@ -594,10 +633,155 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
               shadows: [
                 Shadow(
                   color: Colors.black,
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showShareBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final lang = ref.watch(languageProvider);
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 20,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                AppStrings.get('share_to', lang),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    _buildShareOption(
+                      icon: FontAwesomeIcons.whatsapp,
+                      label: 'WhatsApp',
+                      color: const Color(0xFF25D366),
+                    ),
+                    _buildShareOption(
+                      icon: FontAwesomeIcons.instagram,
+                      label: 'Instagram',
+                      color: const Color(0xFFE4405F),
+                    ),
+                    _buildShareOption(
+                      icon: FontAwesomeIcons.telegram,
+                      label: 'Telegram',
+                      color: const Color(0xFF0088CC),
+                    ),
+                    _buildShareOption(
+                      icon: FontAwesomeIcons.facebook,
+                      label: 'Facebook',
+                      color: const Color(0xFF1877F2),
+                    ),
+                    _buildShareOption(
+                      icon: FontAwesomeIcons.link,
+                      label: AppStrings.get('copy_link', lang),
+                      color: Colors.grey,
+                    ),
+                    _buildShareOption(
+                      icon: FontAwesomeIcons.ellipsis,
+                      label: 'More',
+                      color: AppColors.accent,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    backgroundColor: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.grey.withOpacity(0.1),
+                  ),
+                  child: Text(
+                    AppStrings.get('cancel', lang),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShareOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(right: 24),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 30),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
           ),
         ],

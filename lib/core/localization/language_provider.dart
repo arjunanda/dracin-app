@@ -151,6 +151,9 @@ class AppStrings {
       AppLanguage.id: 'Tips untuk pemutaran video yang lancar.',
       AppLanguage.en: 'Tips for smooth video playback.',
     },
+    'share_to': {AppLanguage.id: 'Bagikan ke', AppLanguage.en: 'Share to'},
+    'cancel': {AppLanguage.id: 'Batal', AppLanguage.en: 'Cancel'},
+    'copy_link': {AppLanguage.id: 'Salin Tautan', AppLanguage.en: 'Copy Link'},
   };
 
   static String get(String key, AppLanguage lang) {

@@ -6,11 +6,12 @@ class ForYouScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SeriesShortsScreen(
+    return const SeriesShortsScreen(
       seriesId: 'fyp',
       title: 'For You',
       thumbnailUrl: 'https://picsum.photos/seed/fyp/800/1200',
       showBackButton: false,
+      enableAds: false,
     );
   }
 }
