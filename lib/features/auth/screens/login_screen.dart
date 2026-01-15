@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/localization/language_provider.dart';
 import '../providers/auth_provider.dart';
+
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -16,6 +18,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = ref.watch(languageProvider);
 
     return Scaffold(
       backgroundColor: isDark
@@ -46,7 +49,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 40),
               Text(
-                'Selamat Datang',
+                AppStrings.get('welcome_back', lang),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   fontWeight: FontWeight.bold,
@@ -55,7 +58,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Masuk untuk melanjutkan menonton drama favorit Anda.',
+                AppStrings.get('login_subtitle', lang),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: isDark
@@ -63,12 +66,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : AppColors.lightTextSecondary,
                 ),
               ),
+
               const Spacer(),
               const SizedBox(height: 48),
 
               // Social Login Buttons
+              // Social Login Buttons
               _buildSocialButton(
-                label: 'Lanjutkan dengan Google',
+                label: AppStrings.get('continue_google', lang),
                 icon: FontAwesomeIcons.google,
                 iconColor: const Color(0xFFDB4437),
                 color: Colors.white,
@@ -77,29 +82,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   // Implement Google Login
                 },
               ),
-              const SizedBox(height: 16),
-              _buildSocialButton(
-                label: 'Lanjutkan dengan Facebook',
-                icon: FontAwesomeIcons.facebook,
-                iconColor: Colors.white,
-                color: const Color(0xFF1877F2),
-                textColor: Colors.white,
-                onPressed: () {
-                  // Implement Facebook Login
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildSocialButton(
-                label: 'Lanjutkan dengan TikTok',
-                icon: FontAwesomeIcons.tiktok,
-                iconColor: Colors.white,
-                color: Colors.black,
-                textColor: Colors.white,
-                onPressed: () {
-                  // Implement TikTok Login
-                },
-              ),
 
+              // const SizedBox(height: 16),
+              // _buildSocialButton(
+              //   label: AppStrings.get('continue_facebook', lang),
+              //   icon: FontAwesomeIcons.facebook,
+              //   iconColor: Colors.white,
+              //   color: const Color(0xFF1877F2),
+              //   textColor: Colors.white,
+              //   onPressed: () {
+              //     // Implement Facebook Login
+              //   },
+              // ),
+              // const SizedBox(height: 16),
+              // _buildSocialButton(
+              //   label: AppStrings.get('continue_tiktok', lang),
+              //   icon: FontAwesomeIcons.tiktok,
+              //   iconColor: Colors.white,
+              //   color: Colors.black,
+              //   textColor: Colors.white,
+              //   onPressed: () {
+              //     // Implement TikTok Login
+              //   },
+              // ),
               const SizedBox(height: 24),
               if (authState.error != null)
                 Padding(
@@ -113,7 +118,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const Spacer(),
 
               Text(
-                'Dengan masuk, Anda menyetujui Ketentuan Layanan dan Kebijakan Privasi kami.',
+                AppStrings.get('login_disclaimer', lang),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,

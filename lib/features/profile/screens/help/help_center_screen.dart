@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/localization/language_provider.dart';
+import './help_detail_screen.dart';
 
 class HelpCenterScreen extends ConsumerWidget {
   const HelpCenterScreen({super.key});
@@ -53,6 +54,17 @@ class HelpCenterScreen extends ConsumerWidget {
             subtitle: AppStrings.get('faq_account_desc', lang),
             icon: Icons.person_outline,
             isDark: isDark,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HelpDetailScreen(
+                    title: AppStrings.get('faq_account_title', lang),
+                    content: AppStrings.get('faq_account_detail', lang),
+                  ),
+                ),
+              );
+            },
           ),
           _buildHelpCard(
             context,
@@ -60,6 +72,7 @@ class HelpCenterScreen extends ConsumerWidget {
             subtitle: AppStrings.get('faq_billing_desc', lang),
             icon: Icons.payments_outlined,
             isDark: isDark,
+            onTap: () {},
           ),
           _buildHelpCard(
             context,
@@ -67,7 +80,19 @@ class HelpCenterScreen extends ConsumerWidget {
             subtitle: AppStrings.get('faq_streaming_desc', lang),
             icon: Icons.high_quality_outlined,
             isDark: isDark,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HelpDetailScreen(
+                    title: AppStrings.get('faq_streaming_title', lang),
+                    content: AppStrings.get('faq_streaming_detail', lang),
+                  ),
+                ),
+              );
+            },
           ),
+
           const SizedBox(height: 32),
           Container(
             padding: const EdgeInsets.all(24),
@@ -148,6 +173,7 @@ class HelpCenterScreen extends ConsumerWidget {
     required String subtitle,
     required IconData icon,
     required bool isDark,
+    required VoidCallback onTap,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -194,7 +220,7 @@ class HelpCenterScreen extends ConsumerWidget {
           ),
         ),
         trailing: Icon(Icons.chevron_right, color: AppColors.accent, size: 20),
-        onTap: () {},
+        onTap: onTap,
       ),
     );
   }
