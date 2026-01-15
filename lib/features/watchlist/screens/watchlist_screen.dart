@@ -54,6 +54,14 @@ class WatchlistScreen extends ConsumerWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = ref.watch(languageProvider);
+    final primaryTextColor = isDark ? Colors.white : Colors.black87;
+    final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
+    final cardColor = isDark
+        ? Colors.white.withOpacity(0.05)
+        : Colors.black.withOpacity(0.05);
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
 
     return Scaffold(
       backgroundColor: isDark
@@ -108,7 +116,7 @@ class WatchlistScreen extends ConsumerWidget {
                         lang,
                       ).replaceAll('{count}', watchlist.length.toString()),
                       style: TextStyle(
-                        color: Colors.white.withAlpha((0.4 * 255).toInt()),
+                        color: secondaryTextColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -119,14 +127,27 @@ class WatchlistScreen extends ConsumerWidget {
 
               // Watchlist Content
               if (watchlist.isEmpty)
-                SliverFillRemaining(child: _buildEmptyState(context, lang))
+                SliverFillRemaining(
+                  child: _buildEmptyState(
+                    context,
+                    lang,
+                    primaryTextColor,
+                    secondaryTextColor,
+                  ),
+                )
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) =>
-                          _buildWatchlistCard(context, watchlist[index]),
+                      (context, index) => _buildWatchlistCard(
+                        context,
+                        watchlist[index],
+                        primaryTextColor,
+                        secondaryTextColor,
+                        cardColor,
+                        borderColor,
+                      ),
                       childCount: watchlist.length,
                     ),
                   ),
@@ -150,7 +171,12 @@ class WatchlistScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, AppLanguage lang) {
+  Widget _buildEmptyState(
+    BuildContext context,
+    AppLanguage lang,
+    Color primaryTextColor,
+    Color secondaryTextColor,
+  ) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -170,10 +196,10 @@ class WatchlistScreen extends ConsumerWidget {
           const SizedBox(height: 32),
           Text(
             AppStrings.get('empty_watchlist_title', lang),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: primaryTextColor,
               letterSpacing: -0.5,
             ),
           ),
@@ -182,7 +208,7 @@ class WatchlistScreen extends ConsumerWidget {
             AppStrings.get('empty_watchlist_subtitle', lang),
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withAlpha((0.4 * 255).toInt()),
+              color: secondaryTextColor,
               fontSize: 15,
               height: 1.4,
             ),
@@ -210,7 +236,14 @@ class WatchlistScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildWatchlistCard(BuildContext context, Series series) {
+  Widget _buildWatchlistCard(
+    BuildContext context,
+    Series series,
+    Color primaryTextColor,
+    Color secondaryTextColor,
+    Color cardColor,
+    Color borderColor,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       height: 175,
@@ -228,12 +261,9 @@ class WatchlistScreen extends ConsumerWidget {
                 filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: cardColor,
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.08),
-                      width: 1.5,
-                    ),
+                    border: Border.all(color: borderColor, width: 1.5),
                   ),
                   padding: const EdgeInsets.only(
                     left: 130,
@@ -250,10 +280,10 @@ class WatchlistScreen extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               series.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w900,
-                                color: Colors.white,
+                                color: primaryTextColor,
                                 letterSpacing: -0.5,
                               ),
                               maxLines: 1,
@@ -274,7 +304,7 @@ class WatchlistScreen extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withOpacity(0.4),
+                          color: secondaryTextColor,
                           height: 1.4,
                         ),
                       ),

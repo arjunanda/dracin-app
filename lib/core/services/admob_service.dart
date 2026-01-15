@@ -120,17 +120,34 @@ class AdMobService {
 class ShortsAdManager {
   int _adsShownCount = 0;
   int _lastAdVideoIndex = -1;
-  int _nextAdTriggerIndex = 9; // First ad at 10th slide (index 9)
+  int _scrollsSinceLastAd = 0;
+  int _nextInterval = 0;
+  int _lastIndex = -1;
   final Random _random = Random();
 
   ShortsAdManager() {
     reset();
   }
 
-  /// Check if ad should be shown based on slide count
+  /// Record a scroll event to track cumulative movement
+  void recordScroll(int currentIndex) {
+    if (_lastIndex != currentIndex) {
+      if (_lastIndex != -1) {
+        _scrollsSinceLastAd++;
+      }
+      _lastIndex = currentIndex;
+    }
+  }
+
+  /// Check if ad should be shown
   bool shouldShowAd(int currentVideoIndex) {
-    // Show ad if we reached the next trigger index and haven't shown an ad for this index yet
-    return currentVideoIndex >= _nextAdTriggerIndex &&
+    // Ad 1: When reaching the 10th slide (index 9)
+    if (_adsShownCount == 0) {
+      return currentVideoIndex >= 9;
+    }
+
+    // Subsequent ads: After 5-10 cumulative scrolls
+    return _scrollsSinceLastAd >= _nextInterval &&
         _lastAdVideoIndex != currentVideoIndex;
   }
 
@@ -138,13 +155,11 @@ class ShortsAdManager {
   void onAdShown(int currentVideoIndex) {
     _adsShownCount++;
     _lastAdVideoIndex = currentVideoIndex;
-
-    // Schedule next ad: random 5-10 slides from current index
-    final interval = _random.nextInt(6) + 5; // 5 to 10
-    _nextAdTriggerIndex = currentVideoIndex + interval;
+    _scrollsSinceLastAd = 0;
+    _nextInterval = _random.nextInt(6) + 5; // 5 to 10 scrolls
 
     debugPrint(
-      '📱 Ad $_adsShownCount shown at index $currentVideoIndex. Next ad scheduled at index $_nextAdTriggerIndex (interval: $interval)',
+      '📱 AdMob: Ad $_adsShownCount shown at index $currentVideoIndex. Next ad in $_nextInterval scrolls.',
     );
   }
 
@@ -152,6 +167,8 @@ class ShortsAdManager {
   void reset() {
     _adsShownCount = 0;
     _lastAdVideoIndex = -1;
-    _nextAdTriggerIndex = 9; // Reset to 10th slide
+    _scrollsSinceLastAd = 0;
+    _nextInterval = 0;
+    _lastIndex = -1;
   }
 }

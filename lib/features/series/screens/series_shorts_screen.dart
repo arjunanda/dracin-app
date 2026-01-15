@@ -73,8 +73,9 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                     itemCount: episodes.length,
                     onPageChanged: (index) async {
                       _currentIndexNotifier.value = index;
+                      _adManager.recordScroll(index);
 
-                      // Check if we should show an ad (time-based)
+                      // Check if we should show an ad (cumulative scrolls)
                       if (!_isLoadingAd && _adManager.shouldShowAd(index)) {
                         setState(() => _isLoadingAd = true);
                         final shown = await _adMobService.showRewardedAd(
