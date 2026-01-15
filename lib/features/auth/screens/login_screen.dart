@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../providers/auth_provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -68,8 +69,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               // Social Login Buttons
               _buildSocialButton(
                 label: 'Lanjutkan dengan Google',
-                logoUrl:
-                    'https://logos-world.net/wp-content/uploads/2020/09/Google-Symbol.png',
+                icon: FontAwesomeIcons.google,
+                iconColor: const Color(0xFFDB4437),
                 color: Colors.white,
                 textColor: Colors.black,
                 onPressed: () {
@@ -79,8 +80,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 16),
               _buildSocialButton(
                 label: 'Lanjutkan dengan Facebook',
-                logoUrl:
-                    'https://static.vecteezy.com/system/resources/previews/018/930/698/non_2x/facebook-logo-facebook-icon-transparent-free-png.png',
+                icon: FontAwesomeIcons.facebook,
+                iconColor: Colors.white,
                 color: const Color(0xFF1877F2),
                 textColor: Colors.white,
                 onPressed: () {
@@ -90,8 +91,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 16),
               _buildSocialButton(
                 label: 'Lanjutkan dengan TikTok',
-                logoUrl:
-                    'https://logospng.org/download/tiktok/logo-tiktok-icone-1536.png',
+                icon: FontAwesomeIcons.tiktok,
+                iconColor: Colors.white,
                 color: Colors.black,
                 textColor: Colors.white,
                 onPressed: () {
@@ -132,7 +133,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Widget _buildSocialButton({
     required String label,
-    required String logoUrl,
+    required IconData icon,
+    required Color iconColor,
     required Color color,
     required Color textColor,
     required VoidCallback onPressed,
@@ -151,18 +153,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         elevation: 0,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Image.network(
-            logoUrl,
-            height: 24,
-            width: 24,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) =>
-                Icon(Icons.login, color: textColor, size: 20),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 24),
+              child: FaIcon(icon, size: 20, color: iconColor),
+            ),
           ),
-          const SizedBox(width: 12),
           Text(
             label,
             style: TextStyle(

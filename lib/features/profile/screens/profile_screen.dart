@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
+import './setting/setting_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -24,7 +25,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ? AppColors.darkBackground
           : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Profile', style: TextStyle(color: AppColors.accent)),
+        title: Text(
+          'Profile',
+          style: Theme.of(context).textTheme.displayLarge?.copyWith(
+            fontSize: 24,
+            color: AppColors.accent,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -61,7 +69,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Text(
                           user?.email ?? '',
                           style: TextStyle(
-                            color: Colors.grey.withOpacity(0.7),
+                            color: Colors.grey.withAlpha((0.7 * 255).toInt()),
                             fontSize: 14,
                           ),
                         ),
@@ -110,8 +118,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             context: context,
             icon: Icons.settings,
             title: 'Setting',
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const SettingScreen()),
+              );
+            },
           ),
+
           _buildMenuItem(
             context: context,
             icon: Icons.help_outline,
