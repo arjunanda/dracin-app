@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
 import 'features/navigation/screens/main_navigation_screen.dart';
+
 import 'core/services/admob_service.dart';
 
 void main() async {
@@ -18,13 +20,14 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+
     return MaterialApp(
       title: 'Dracin App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      // Default to dark for the Imperial Dark experience
-      themeMode: ThemeMode.dark,
+      themeMode: themeMode,
       home: const MainNavigationScreen(),
     );
   }

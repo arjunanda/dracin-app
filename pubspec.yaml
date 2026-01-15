@@ -42,6 +42,7 @@ dependencies:
   logger: ^2.0.2+1
   json_annotation: ^4.9.0
   video_player: ^2.10.1
+  font_awesome_flutter: ^10.7.0
 
 dev_dependencies:
   flutter_test:
