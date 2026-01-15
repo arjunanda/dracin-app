@@ -5,6 +5,7 @@ import '../../../core/localization/language_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
 import './setting/setting_screen.dart';
+import './help/help_center_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -131,8 +132,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             context: context,
             icon: Icons.help_outline,
             title: AppStrings.get('help', lang),
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const HelpCenterScreen(),
+                ),
+              );
+            },
           ),
+
           if (isLoggedIn) ...[
             const Divider(height: 32),
             _buildMenuItem(
@@ -184,56 +192,63 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(
-              color: AppColors.accent.withAlpha((0.1 * 255).toInt()),
-              width: 1,
-            ),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.withAlpha((0.3 * 255).toInt()),
-                  borderRadius: BorderRadius.circular(2),
+        return Consumer(
+          builder: (context, ref, child) {
+            final lang = ref.watch(languageProvider);
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
+                border: Border.all(
+                  color: AppColors.accent.withAlpha((0.1 * 255).toInt()),
+                  width: 1,
                 ),
               ),
-              const SizedBox(height: 24),
-              Text(
-                AppStrings.get('select_language', currentLang),
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withAlpha((0.3 * 255).toInt()),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    AppStrings.get('select_language', lang),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildLanguageOption(
+                    context,
+                    ref,
+                    title: AppStrings.get('indonesian', lang),
+                    language: AppLanguage.id,
+                    isSelected: lang == AppLanguage.id,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLanguageOption(
+                    context,
+                    ref,
+                    title: AppStrings.get('english', lang),
+                    language: AppLanguage.en,
+                    isSelected: lang == AppLanguage.en,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
-              const SizedBox(height: 24),
-              _buildLanguageOption(
-                context,
-                ref,
-                title: AppStrings.get('indonesian', currentLang),
-                language: AppLanguage.id,
-                isSelected: currentLang == AppLanguage.id,
-                isDark: isDark,
-              ),
-              const SizedBox(height: 12),
-              _buildLanguageOption(
-                context,
-                ref,
-                title: AppStrings.get('english', currentLang),
-                language: AppLanguage.en,
-                isSelected: currentLang == AppLanguage.en,
-                isDark: isDark,
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
+            );
+          },
         );
       },
     );

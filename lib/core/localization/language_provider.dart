@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum AppLanguage { id, en }
 
-final languageProvider = StateProvider<AppLanguage>((ref) => AppLanguage.id);
+final languageProvider = StateProvider<AppLanguage>((ref) => AppLanguage.en);
 
 class AppStrings {
   static Map<String, Map<AppLanguage, String>> _strings = {
@@ -120,6 +120,36 @@ class AppStrings {
     'top_rated': {
       AppLanguage.id: 'Rating Tertinggi',
       AppLanguage.en: 'Top Rated',
+    },
+    'help_center_desc': {
+      AppLanguage.id:
+          'Temukan jawaban atas pertanyaan Anda atau hubungi tim dukungan kami.',
+      AppLanguage.en:
+          'Find answers to your questions or contact our support team.',
+    },
+    'faq_account_title': {
+      AppLanguage.id: 'Masalah Akun',
+      AppLanguage.en: 'Account Issues',
+    },
+    'faq_account_desc': {
+      AppLanguage.id: 'Cara mengatur ulang kata sandi dan mengelola profil.',
+      AppLanguage.en: 'How to reset passwords and manage profiles.',
+    },
+    'faq_billing_title': {
+      AppLanguage.id: 'Pembayaran & Langganan',
+      AppLanguage.en: 'Billing & Subscription',
+    },
+    'faq_billing_desc': {
+      AppLanguage.id: 'Informasi tentang paket dan metode pembayaran.',
+      AppLanguage.en: 'Information about plans and payment methods.',
+    },
+    'faq_streaming_title': {
+      AppLanguage.id: 'Kualitas Streaming',
+      AppLanguage.en: 'Streaming Quality',
+    },
+    'faq_streaming_desc': {
+      AppLanguage.id: 'Tips untuk pemutaran video yang lancar.',
+      AppLanguage.en: 'Tips for smooth video playback.',
     },
   };
 
