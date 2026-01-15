@@ -27,23 +27,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   ];
 
   void _onTabTapped(int index) {
-    // If Profile tab (index 3) is tapped, navigate to login
-    // if (index == 3) {
-    //   Navigator.of(
-    //     context,
-    //   ).push(MaterialPageRoute(builder: (context) => const LoginScreen()));
-    // } else {
-    //   setState(() {
-    //     _currentIndex = index;
-    //     // If switching to FYP, generate a new key to force reload
-    //     if (index == 1) {
-    //       _fypKey = UniqueKey();
-    //     }
-    //   });
-    // }
     setState(() {
       _currentIndex = index;
-      // If switching to FYP, generate a new key to force reload
       if (index == 1) {
         _fypKey = UniqueKey();
       }

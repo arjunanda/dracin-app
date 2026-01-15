@@ -90,11 +90,10 @@ class WatchlistScreen extends ConsumerWidget {
                   ),
                   title: Text(
                     'My Watchlist',
-                    style: TextStyle(
-                      color: AppColors.accent,
-                      fontWeight: FontWeight.w900,
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
                       fontSize: 24,
-                      letterSpacing: -1,
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   background: Container(

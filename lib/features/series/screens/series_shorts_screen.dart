@@ -27,7 +27,7 @@ class SeriesShortsScreen extends ConsumerStatefulWidget {
 
 class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
   final PageController _pageController = PageController();
-  int _currentIndex = 0;
+  final ValueNotifier<int> _currentIndexNotifier = ValueNotifier<int>(0);
 
   // AdMob instances
   final AdMobService _adMobService = AdMobService();
@@ -42,28 +42,13 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
       ref.invalidate(episodesProvider(widget.seriesId));
       // Preload first ad
       await _adMobService.loadRewardedAd();
-
-      // Show initial ad
-      if (_adManager.shouldShowAd()) {
-        setState(() => _isLoadingAd = true);
-        final shown = await _adMobService.showRewardedAd(
-          onUserEarnedReward: (reward) {
-            debugPrint(
-              '🎁 User earned reward: ${reward.amount} ${reward.type}',
-            );
-          },
-        );
-        if (shown) {
-          _adManager.onAdShown();
-        }
-        setState(() => _isLoadingAd = false);
-      }
     });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _currentIndexNotifier.dispose();
     _adMobService.dispose();
     super.dispose();
   }
@@ -88,12 +73,10 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                     controller: _pageController,
                     itemCount: episodes.length,
                     onPageChanged: (index) async {
-                      setState(() {
-                        _currentIndex = index;
-                      });
+                      _currentIndexNotifier.value = index;
 
                       // Check if we should show an ad (time-based)
-                      if (!_isLoadingAd && _adManager.shouldShowAd()) {
+                      if (!_isLoadingAd && _adManager.shouldShowAd(index)) {
                         setState(() => _isLoadingAd = true);
                         final shown = await _adMobService.showRewardedAd(
                           onUserEarnedReward: (reward) {
@@ -103,20 +86,25 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                           },
                         );
                         if (shown) {
-                          _adManager.onAdShown();
+                          _adManager.onAdShown(index);
                         }
                         setState(() => _isLoadingAd = false);
                       }
                     },
                     itemBuilder: (context, index) {
                       final episode = episodes[index];
-                      return _ShortVideoItem(
-                        episode: episode,
-                        shouldPlay: index == _currentIndex && !_isLoadingAd,
-                        totalEpisodes: episodes.length,
-                        seriesId: widget.seriesId,
-                        seriesTitle: widget.title,
-                        thumbnailUrl: widget.thumbnailUrl,
+                      return ValueListenableBuilder<int>(
+                        valueListenable: _currentIndexNotifier,
+                        builder: (context, currentIndex, _) {
+                          return _ShortVideoItem(
+                            episode: episode,
+                            shouldPlay: index == currentIndex && !_isLoadingAd,
+                            totalEpisodes: episodes.length,
+                            seriesId: widget.seriesId,
+                            seriesTitle: widget.title,
+                            thumbnailUrl: widget.thumbnailUrl,
+                          );
+                        },
                       );
                     },
                   ),
@@ -161,24 +149,29 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                 ],
                 Expanded(
                   child: IgnorePointer(
-                    child: Text(
-                      episodes.isNotEmpty && _currentIndex < episodes.length
-                          ? 'Episode ${episodes[_currentIndex].episodeNumber}'
-                          : widget.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black,
-                            blurRadius: 8,
-                            offset: Offset(0, 2),
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: _currentIndexNotifier,
+                      builder: (context, currentIndex, _) {
+                        return Text(
+                          episodes.isNotEmpty && currentIndex < episodes.length
+                              ? 'Episode ${episodes[currentIndex].episodeNumber}'
+                              : widget.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black,
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -224,22 +217,28 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
       children: [
         // Video Player
         Positioned.fill(
-          child: CustomVideoPlayer(
-            key: ValueKey(widget.episode.id),
-            sources: [VideoSource(label: 'Auto', url: widget.episode.videoUrl)],
-            subtitles: const [
-              SubtitleSource(label: 'Indonesia', url: ''),
-              SubtitleSource(label: 'English', url: ''),
-            ],
-            autoPlay: widget.shouldPlay,
-            aspectRatio: 9 / 16,
-            fit: BoxFit.cover,
-            showDefaultProgressBar: false,
-            onControllerInitialized: (controller) {
-              setState(() {
-                _videoController = controller;
-              });
-            },
+          child: RepaintBoundary(
+            child: CustomVideoPlayer(
+              key: ValueKey(widget.episode.id),
+              sources: [
+                VideoSource(label: 'Auto', url: widget.episode.videoUrl),
+              ],
+              subtitles: const [
+                SubtitleSource(label: 'Indonesia', url: ''),
+                SubtitleSource(label: 'English', url: ''),
+              ],
+              autoPlay: widget.shouldPlay,
+              aspectRatio: 9 / 16,
+              fit: BoxFit.cover,
+              showDefaultProgressBar: false,
+              onControllerInitialized: (controller) {
+                if (mounted) {
+                  setState(() {
+                    _videoController = controller;
+                  });
+                }
+              },
+            ),
           ),
         ),
 
@@ -247,28 +246,30 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
         Positioned(
           right: 12,
           bottom: 120,
-          child: Column(
-            children: [
-              _buildSideAction(
-                icon: _isLiked ? Icons.favorite : Icons.favorite_border,
-                label: '1.2k',
-                color: _isLiked ? Colors.red : Colors.white,
-                onTap: () {
-                  setState(() {
-                    _isLiked = !_isLiked;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildSideAction(
-                icon: Icons.share,
-                label: 'Share',
-                color: Colors.white,
-                onTap: () {
-                  // TODO: Implement share
-                },
-              ),
-            ],
+          child: RepaintBoundary(
+            child: Column(
+              children: [
+                _buildSideAction(
+                  icon: _isLiked ? Icons.favorite : Icons.favorite_border,
+                  label: '1.2k',
+                  color: _isLiked ? Colors.red : Colors.white,
+                  onTap: () {
+                    setState(() {
+                      _isLiked = !_isLiked;
+                    });
+                  },
+                ),
+                const SizedBox(height: 20),
+                _buildSideAction(
+                  icon: Icons.share,
+                  label: 'Share',
+                  color: Colors.white,
+                  onTap: () {
+                    // TODO: Implement share
+                  },
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -277,114 +278,116 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
           bottom: 0,
           left: 0,
           right: 0,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Episode ${widget.episode.episodeNumber}',
-                  style: TextStyle(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.8),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  widget.episode.title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    height: 1.3,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.8),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Custom Progress Bar & Total Episodes Container
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Background Container for Total Episodes (Not clickable)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      border: Border(
-                        top: BorderSide(
-                          color: Colors.white.withOpacity(0.1),
-                          width: 1,
+          child: RepaintBoundary(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'Episode ${widget.episode.episodeNumber}',
+                    style: TextStyle(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.8),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
                         ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        // Only this part is clickable
-                        GestureDetector(
-                          onTap: _showEpisodesBottomSheet,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.video_library,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Total ${widget.totalEpisodes} Episode',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.chevron_right,
-                                color: Colors.white70,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
                       ],
                     ),
                   ),
-                  // Interactive Progress Bar (Slidable & Clickable)
-                  if (_videoController != null)
-                    Positioned(
-                      top: -16, // Moved lower as requested
-                      left: -15,
-                      right: -15,
-                      child: _buildCustomProgressBar(),
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    widget.episode.title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.8),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                ],
-              ),
-            ],
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Custom Progress Bar & Total Episodes Container
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Background Container for Total Episodes (Not clickable)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        border: Border(
+                          top: BorderSide(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          // Only this part is clickable
+                          GestureDetector(
+                            onTap: _showEpisodesBottomSheet,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.video_library,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Total ${widget.totalEpisodes} Episode',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.white70,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                    ),
+                    // Interactive Progress Bar (Slidable & Clickable)
+                    if (_videoController != null)
+                      Positioned(
+                        top: -16, // Moved lower as requested
+                        left: -15,
+                        right: -15,
+                        child: _buildCustomProgressBar(),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ],
