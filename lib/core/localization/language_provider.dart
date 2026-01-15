@@ -60,6 +60,54 @@ class AppStrings {
       AppLanguage.id: 'Jelajahi Drama',
       AppLanguage.en: 'Explore Dramas',
     },
+    'select_language': {
+      AppLanguage.id: 'Pilih Bahasa',
+      AppLanguage.en: 'Select Language',
+    },
+    'indonesian': {
+      AppLanguage.id: 'Bahasa Indonesia',
+      AppLanguage.en: 'Indonesian',
+    },
+    'english': {AppLanguage.id: 'Bahasa Inggris', AppLanguage.en: 'English'},
+    'notification_settings': {
+      AppLanguage.id: 'Pengaturan Notifikasi',
+      AppLanguage.en: 'Notification Settings',
+    },
+    'new_episodes': {
+      AppLanguage.id: 'Episode Baru',
+      AppLanguage.en: 'New Episodes',
+    },
+    'new_episodes_desc': {
+      AppLanguage.id: 'Dapatkan pemberitahuan saat episode baru dirilis.',
+      AppLanguage.en: 'Get notified when new episodes are released.',
+    },
+    'promotions': {
+      AppLanguage.id: 'Promosi & Penawaran',
+      AppLanguage.en: 'Promotions & Offers',
+    },
+    'promotions_desc': {
+      AppLanguage.id: 'Dapatkan info tentang diskon dan konten spesial.',
+      AppLanguage.en: 'Get info about discounts and special content.',
+    },
+    'system_notif': {
+      AppLanguage.id: 'Notifikasi Sistem',
+      AppLanguage.en: 'System Notifications',
+    },
+    'system_notif_desc': {
+      AppLanguage.id: 'Pembaruan penting tentang akun dan aplikasi Anda.',
+      AppLanguage.en: 'Important updates about your account and app.',
+    },
+    'about_description': {
+      AppLanguage.id:
+          'Dracin adalah platform streaming drama pilihan Anda yang menghadirkan konten terbaik dengan kualitas premium. Nikmati pengalaman menonton sinematik dengan koleksi drama yang terus diperbarui.',
+      AppLanguage.en:
+          'Dracin is your go-to drama streaming platform bringing the best content with premium quality. Enjoy a cinematic viewing experience with a constantly updated collection of dramas.',
+    },
+    'app_name': {AppLanguage.id: 'Dracin App', AppLanguage.en: 'Dracin App'},
+    'company': {
+      AppLanguage.id: 'Dikembangkan oleh KiSah Team',
+      AppLanguage.en: 'Developed by KiSah Team',
+    },
     'trending': {
       AppLanguage.id: 'Tren Sekarang',
       AppLanguage.en: 'Trending Now',

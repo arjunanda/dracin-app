@@ -115,11 +115,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             context: context,
             icon: Icons.language,
             title: AppStrings.get('language', lang),
-            onTap: () {
-              ref.read(languageProvider.notifier).state = lang == AppLanguage.id
-                  ? AppLanguage.en
-                  : AppLanguage.id;
-            },
+            onTap: () => _showLanguageSelector(context, ref, lang),
           ),
           _buildMenuItem(
             context: context,
@@ -173,6 +169,122 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       trailing: const Icon(Icons.chevron_right, size: 20),
       onTap: onTap,
+    );
+  }
+
+  void _showLanguageSelector(
+    BuildContext context,
+    WidgetRef ref,
+    AppLanguage currentLang,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: AppColors.accent.withAlpha((0.1 * 255).toInt()),
+              width: 1,
+            ),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withAlpha((0.3 * 255).toInt()),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                AppStrings.get('select_language', currentLang),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildLanguageOption(
+                context,
+                ref,
+                title: AppStrings.get('indonesian', currentLang),
+                language: AppLanguage.id,
+                isSelected: currentLang == AppLanguage.id,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 12),
+              _buildLanguageOption(
+                context,
+                ref,
+                title: AppStrings.get('english', currentLang),
+                language: AppLanguage.en,
+                isSelected: currentLang == AppLanguage.en,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption(
+    BuildContext context,
+    WidgetRef ref, {
+    required String title,
+    required AppLanguage language,
+    required bool isSelected,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: () {
+        ref.read(languageProvider.notifier).state = language;
+        Navigator.pop(context);
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.accent.withAlpha((0.1 * 255).toInt())
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.accent
+                : Colors.grey.withAlpha((0.2 * 255).toInt()),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: isSelected
+                    ? AppColors.accent
+                    : (isDark ? Colors.white : Colors.black),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 16,
+              ),
+            ),
+            const Spacer(),
+            if (isSelected)
+              const Icon(Icons.check_circle, color: AppColors.accent),
+          ],
+        ),
+      ),
     );
   }
 }
