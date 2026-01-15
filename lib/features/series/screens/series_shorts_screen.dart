@@ -5,18 +5,19 @@ import '../../../core/widgets/custom_video_player.dart';
 import '../../../core/services/admob_service.dart';
 import '../providers/episodes_provider.dart';
 import '../../series/models/episode_model.dart';
-import '../screens/series_episodes_screen.dart';
 import 'package:video_player/video_player.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
   final String title;
+  final String thumbnailUrl;
   final bool showBackButton;
 
   const SeriesShortsScreen({
     super.key,
     required this.seriesId,
     required this.title,
+    required this.thumbnailUrl,
     this.showBackButton = false,
   });
 
@@ -115,6 +116,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                         totalEpisodes: episodes.length,
                         seriesId: widget.seriesId,
                         seriesTitle: widget.title,
+                        thumbnailUrl: widget.thumbnailUrl,
                       );
                     },
                   ),
@@ -197,6 +199,7 @@ class _ShortVideoItem extends StatefulWidget {
   final int totalEpisodes;
   final String seriesId;
   final String seriesTitle;
+  final String thumbnailUrl;
 
   const _ShortVideoItem({
     required this.episode,
@@ -204,6 +207,7 @@ class _ShortVideoItem extends StatefulWidget {
     required this.totalEpisodes,
     required this.seriesId,
     required this.seriesTitle,
+    required this.thumbnailUrl,
   });
 
   @override
@@ -339,17 +343,7 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
                       children: [
                         // Only this part is clickable
                         GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => SeriesEpisodesScreen(
-                                  seriesId: widget.seriesId,
-                                  title: widget.seriesTitle,
-                                  thumbnailUrl: '',
-                                ),
-                              ),
-                            );
-                          },
+                          onTap: _showEpisodesBottomSheet,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -394,6 +388,178 @@ class _ShortVideoItemState extends State<_ShortVideoItem> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showEpisodesBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Header with Banner and Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Banner
+                    Container(
+                      width: 100,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          widget.thumbnailUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: Colors.grey[900],
+                                child: const Icon(
+                                  Icons.movie,
+                                  color: Colors.white24,
+                                ),
+                              ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Title and Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.seriesTitle,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${widget.totalEpisodes} Episodes',
+                              style: TextStyle(
+                                color: AppColors.accent,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Select an episode to watch',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Divider(color: Colors.white10, height: 1),
+              // Episode Grid
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(20),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 5,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                  ),
+                  itemCount: widget.totalEpisodes,
+                  itemBuilder: (context, index) {
+                    final isCurrent = widget.episode.episodeNumber == index + 1;
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        // In a real app, we would navigate to that episode
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isCurrent
+                              ? AppColors.accent
+                              : Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isCurrent
+                                ? AppColors.accent
+                                : Colors.white.withOpacity(0.1),
+                          ),
+                          boxShadow: isCurrent
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.accent.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            color: isCurrent ? Colors.black : Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

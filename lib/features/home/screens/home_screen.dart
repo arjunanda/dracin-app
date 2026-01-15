@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../series/screens/series_episodes_screen.dart';
 import '../../series/screens/series_shorts_screen.dart';
 import '../providers/series_provider.dart';
+import 'search_screen.dart';
 import '../models/series_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -51,7 +51,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           SliverAppBar(
             floating: true,
             title: Text(
-              'Discover',
+              'KiSah',
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
                 fontSize: 24,
                 color: AppColors.accent,
@@ -63,7 +63,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             centerTitle: false,
             actions: [
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SearchScreen()),
+                  );
+                },
                 icon: const Icon(Icons.search, size: 28),
               ),
               const SizedBox(width: 8),
@@ -186,6 +190,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     builder: (_) => SeriesShortsScreen(
                       seriesId: s.id,
                       title: s.title,
+                      thumbnailUrl: s.thumbnailUrl,
                       showBackButton: true,
                     ),
                   ),

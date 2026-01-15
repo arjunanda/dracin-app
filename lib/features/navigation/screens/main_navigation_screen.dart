@@ -17,10 +17,11 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _currentIndex = 0;
+  Key _fypKey = UniqueKey();
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const ForYouScreen(),
+    const SizedBox.shrink(), // Placeholder for FYP
     const WatchlistScreen(),
     const ProfileScreen(),
   ];
@@ -34,6 +35,10 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     } else {
       setState(() {
         _currentIndex = index;
+        // If switching to FYP, generate a new key to force reload
+        if (index == 1) {
+          _fypKey = UniqueKey();
+        }
       });
     }
   }
@@ -41,7 +46,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: _currentIndex == 1
+          ? ForYouScreen(key: _fypKey)
+          : _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,

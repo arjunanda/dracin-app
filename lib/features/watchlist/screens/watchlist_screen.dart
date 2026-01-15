@@ -324,6 +324,7 @@ class WatchlistScreen extends ConsumerWidget {
                                   builder: (_) => SeriesShortsScreen(
                                     seriesId: series.id,
                                     title: series.title,
+                                    thumbnailUrl: series.thumbnailUrl,
                                     showBackButton: true,
                                   ),
                                 ),
