@@ -117,6 +117,45 @@ class AppStrings {
       AppLanguage.id: 'Rekomendasi',
       AppLanguage.en: 'Recommended',
     },
+    'faq_account_detail': {
+      AppLanguage.id:
+          '• Cara Reset Password: Klik "Lupa Password" di halaman login.\n• Ubah Profil: Buka menu Profile > Edit.\n• Keamanan: Jangan bagikan akun Anda dengan orang lain.',
+      AppLanguage.en:
+          '• How to Reset Password: Click "Forgot Password" on login page.\n• Change Profile: Go to Profile > Edit.\n• Security: Do not share your account with others.',
+    },
+    'faq_streaming_detail': {
+      AppLanguage.id:
+          '• Koneksi: Pastikan internet Anda stabil (min. 5Mbps).\n• Kualitas: Atur kualitas video ke "Otomatis".\n• Cache: Bersihkan cache aplikasi jika video macet.',
+      AppLanguage.en:
+          '• Connection: Ensure stable internet (min. 5Mbps).\n• Quality: Set video quality to "Auto".\n• Cache: Clear app cache if video lags.',
+    },
+    'welcome_back': {
+      AppLanguage.id: 'Selamat Datang',
+      AppLanguage.en: 'Welcome Back',
+    },
+    'login_subtitle': {
+      AppLanguage.id: 'Masuk untuk melanjutkan menonton drama favorit Anda.',
+      AppLanguage.en: 'Login to continue watching your favorite dramas.',
+    },
+    'continue_google': {
+      AppLanguage.id: 'Lanjutkan dengan Google',
+      AppLanguage.en: 'Continue with Google',
+    },
+    'continue_facebook': {
+      AppLanguage.id: 'Lanjutkan dengan Facebook',
+      AppLanguage.en: 'Continue with Facebook',
+    },
+    'continue_tiktok': {
+      AppLanguage.id: 'Lanjutkan dengan TikTok',
+      AppLanguage.en: 'Continue with TikTok',
+    },
+    'login_disclaimer': {
+      AppLanguage.id:
+          'Dengan masuk, Anda menyetujui Ketentuan Layanan dan Kebijakan Privasi kami.',
+      AppLanguage.en:
+          'By logging in, you agree to our Terms of Service and Privacy Policy.',
+    },
+    'back': {AppLanguage.id: 'Kembali', AppLanguage.en: 'Back'},
     'top_rated': {
       AppLanguage.id: 'Rating Tertinggi',
       AppLanguage.en: 'Top Rated',
