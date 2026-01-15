@@ -49,7 +49,6 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
   void dispose() {
     _pageController.dispose();
     _currentIndexNotifier.dispose();
-    _adMobService.dispose();
     super.dispose();
   }
 

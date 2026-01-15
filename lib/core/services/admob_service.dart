@@ -16,6 +16,7 @@ class AdMobService {
 
   RewardedAd? _rewardedAd;
   bool _isAdLoaded = false;
+  bool _isAdLoading = false;
 
   /// Get the appropriate ad unit ID based on platform
   String get rewardedAdUnitId {
@@ -30,29 +31,36 @@ class AdMobService {
   /// Initialize AdMob
   static Future<void> initialize() async {
     await MobileAds.instance.initialize();
-    debugPrint('📱 AdMob initialized');
+    debugPrint('📱 AdMob: Initialized');
   }
 
   /// Load a rewarded ad
   Future<void> loadRewardedAd() async {
-    debugPrint('📱 Loading rewarded ad...');
+    if (_isAdLoaded || _isAdLoading) {
+      debugPrint('📱 AdMob: Ad already loaded or loading, skipping load');
+      return;
+    }
+
+    _isAdLoading = true;
+    debugPrint('📱 AdMob: Loading rewarded ad...');
 
     await RewardedAd.load(
       adUnitId: rewardedAdUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
-          debugPrint('📱 Rewarded ad loaded successfully');
+          debugPrint('📱 AdMob: Rewarded ad loaded successfully');
           _rewardedAd = ad;
           _isAdLoaded = true;
+          _isAdLoading = false;
 
           // Set fullscreen content callback
           _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
             onAdShowedFullScreenContent: (ad) {
-              debugPrint('📱 Ad showed fullscreen');
+              debugPrint('📱 AdMob: Ad showed fullscreen');
             },
             onAdDismissedFullScreenContent: (ad) {
-              debugPrint('📱 Ad dismissed');
+              debugPrint('📱 AdMob: Ad dismissed');
               ad.dispose();
               _rewardedAd = null;
               _isAdLoaded = false;
@@ -60,16 +68,22 @@ class AdMobService {
               loadRewardedAd();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
-              debugPrint('📱 Ad failed to show: $error');
+              debugPrint('📱 AdMob: Ad failed to show: $error');
               ad.dispose();
               _rewardedAd = null;
               _isAdLoaded = false;
+              // Try to load again
+              loadRewardedAd();
             },
           );
         },
         onAdFailedToLoad: (error) {
-          debugPrint('📱 Failed to load rewarded ad: $error');
+          debugPrint('📱 AdMob: Failed to load rewarded ad: $error');
           _isAdLoaded = false;
+          _isAdLoading = false;
+          _rewardedAd = null;
+          // Retry after a delay
+          Future.delayed(const Duration(seconds: 10), () => loadRewardedAd());
         },
       ),
     );
