@@ -1,3 +1,4 @@
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/secure_storage.dart';
@@ -36,6 +37,7 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
   final SecureStorage _storage;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
 
   AuthNotifier(this._authService, this._storage) : super(AuthState()) {
     checkAuth();
@@ -86,7 +88,42 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> signInWithGoogle() async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        state = state.copyWith(status: AuthStatus.unauthenticated);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        state = state.copyWith(
+          status: AuthStatus.unauthenticated,
+          error: 'Could not get ID Token from Google',
+        );
+        return;
+      }
+
+      final res = await _authService.loginWithGoogle(idToken: idToken);
+      final token = res['token'];
+      await _storage.saveToken(token);
+      final user = await _authService.getMe();
+      state = state.copyWith(status: AuthStatus.authenticated, user: user);
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        error: e.toString(),
+      );
+    }
+  }
+
   Future<void> logout() async {
+    await _googleSignIn.signOut();
     await _storage.deleteToken();
     state = state.copyWith(status: AuthStatus.unauthenticated, user: null);
   }

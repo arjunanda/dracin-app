@@ -27,7 +27,7 @@ class HelpCenterScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.accent),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.accent),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -219,7 +219,11 @@ class HelpCenterScreen extends ConsumerWidget {
             ),
           ),
         ),
-        trailing: Icon(Icons.chevron_right, color: AppColors.accent, size: 20),
+        trailing: const Icon(
+          Icons.chevron_right,
+          color: AppColors.accent,
+          size: 20,
+        ),
         onTap: onTap,
       ),
     );

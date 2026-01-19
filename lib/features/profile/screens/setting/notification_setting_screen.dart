@@ -31,7 +31,7 @@ class NotificationSettingScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.accent),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.accent),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -114,7 +114,7 @@ class NotificationSettingScreen extends ConsumerWidget {
         ),
         value: value,
         onChanged: onChanged,
-        activeColor: AppColors.accent,
+        activeThumbColor: AppColors.accent,
         activeTrackColor: AppColors.accent.withAlpha((0.3 * 255).toInt()),
         inactiveThumbColor: Colors.grey,
         inactiveTrackColor: Colors.grey.withAlpha((0.2 * 255).toInt()),

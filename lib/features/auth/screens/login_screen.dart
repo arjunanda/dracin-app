@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/localization/language_provider.dart';
 import '../providers/auth_provider.dart';
-
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -20,19 +19,49 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = ref.watch(languageProvider);
 
+    // Listen to auth state changes
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.status == AuthStatus.authenticated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppStrings.get('login_success', lang)),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.of(context).pop();
+      } else if (next.error != null && next.error != previous?.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error!),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.darkBackground
           : AppColors.lightBackground,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.close, color: isDark ? Colors.white : Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(),
-              // App Logo or Icon can go here
+              const SizedBox(height: 40),
+              // App Logo
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(20),
@@ -66,11 +95,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : AppColors.lightTextSecondary,
                 ),
               ),
+              const SizedBox(height: 60),
 
-              const Spacer(),
-              const SizedBox(height: 48),
-
-              // Social Login Buttons
               // Social Login Buttons
               _buildSocialButton(
                 label: AppStrings.get('continue_google', lang),
@@ -78,44 +104,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 iconColor: const Color(0xFFDB4437),
                 color: Colors.white,
                 textColor: Colors.black,
+                isLoading: authState.status == AuthStatus.loading,
                 onPressed: () {
-                  // Implement Google Login
+                  ref.read(authProvider.notifier).signInWithGoogle();
                 },
               ),
 
-              // const SizedBox(height: 16),
-              // _buildSocialButton(
-              //   label: AppStrings.get('continue_facebook', lang),
-              //   icon: FontAwesomeIcons.facebook,
-              //   iconColor: Colors.white,
-              //   color: const Color(0xFF1877F2),
-              //   textColor: Colors.white,
-              //   onPressed: () {
-              //     // Implement Facebook Login
-              //   },
-              // ),
-              // const SizedBox(height: 16),
-              // _buildSocialButton(
-              //   label: AppStrings.get('continue_tiktok', lang),
-              //   icon: FontAwesomeIcons.tiktok,
-              //   iconColor: Colors.white,
-              //   color: Colors.black,
-              //   textColor: Colors.white,
-              //   onPressed: () {
-              //     // Implement TikTok Login
-              //   },
-              // ),
-              const SizedBox(height: 24),
-              if (authState.error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: Text(
-                    authState.error!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppColors.error),
-                  ),
-                ),
-              const Spacer(),
+              const SizedBox(height: 16),
+              _buildSocialButton(
+                label: AppStrings.get('continue_facebook', lang),
+                icon: FontAwesomeIcons.facebook,
+                iconColor: Colors.white,
+                color: const Color(0xFF1877F2),
+                textColor: Colors.white,
+                onPressed: () {
+                  _showComingSoon(context, 'Facebook', lang);
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildSocialButton(
+                label: AppStrings.get('continue_tiktok', lang),
+                icon: FontAwesomeIcons.tiktok,
+                iconColor: Colors.white,
+                color: Colors.black,
+                textColor: Colors.white,
+                onPressed: () {
+                  _showComingSoon(context, 'TikTok', lang);
+                },
+              ),
+
+              const SizedBox(height: 48),
 
               Text(
                 AppStrings.get('login_disclaimer', lang),
@@ -136,6 +154,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  void _showComingSoon(
+    BuildContext context,
+    String provider,
+    AppLanguage lang,
+  ) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '$provider Login ${lang == AppLanguage.id ? 'akan segera datang!' : 'is coming soon!'}',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Widget _buildSocialButton({
     required String label,
     required IconData icon,
@@ -143,9 +176,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     required Color color,
     required Color textColor,
     required VoidCallback onPressed,
+    bool isLoading = false,
   }) {
     return ElevatedButton(
-      onPressed: onPressed,
+      onPressed: isLoading ? null : onPressed,
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: textColor,
@@ -158,26 +192,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         elevation: 0,
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 24),
-              child: FaIcon(icon, size: 20, color: iconColor),
+      child: isLoading
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
+              ),
+            )
+          : Stack(
+              alignment: Alignment.center,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 24),
+                    child: FaIcon(icon, size: 20, color: iconColor),
+                  ),
+                ),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
             ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              color: textColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -317,7 +317,7 @@ class WatchlistScreen extends ConsumerWidget {
                               children: [
                                 Row(
                                   children: [
-                                    Text(
+                                    const Text(
                                       "Ep 3",
                                       style: TextStyle(
                                         fontSize: 11,
@@ -343,9 +343,10 @@ class WatchlistScreen extends ConsumerWidget {
                                     backgroundColor: Colors.white.withOpacity(
                                       0.05,
                                     ),
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppColors.accent,
-                                    ),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          AppColors.accent,
+                                        ),
                                     minHeight: 4,
                                   ),
                                 ),

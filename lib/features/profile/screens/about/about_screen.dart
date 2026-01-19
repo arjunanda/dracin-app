@@ -26,7 +26,7 @@ class AboutScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.accent),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.accent),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -51,7 +51,7 @@ class AboutScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: Center(
+                child: const Center(
                   child: Text(
                     'K',
                     style: TextStyle(
@@ -73,7 +73,7 @@ class AboutScreen extends ConsumerWidget {
                 letterSpacing: 1.2,
               ),
             ),
-            Text(
+            const Text(
               'Version 1.0.0',
               style: TextStyle(
                 color: AppColors.accent,
@@ -162,7 +162,7 @@ class AboutScreen extends ConsumerWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.accent,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,

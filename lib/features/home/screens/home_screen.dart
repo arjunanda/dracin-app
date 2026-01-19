@@ -163,7 +163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) {
     if (series.isEmpty) {
       return [
-        SliverToBoxAdapter(
+        const SliverToBoxAdapter(
           child: SizedBox(
             height: 400,
             child: Center(child: CircularProgressIndicator()),

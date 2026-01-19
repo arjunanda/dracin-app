@@ -528,7 +528,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
           _buildMenuOption(
             icon: Icons.auto_awesome,
             label: 'Auto',
-            subtitle: _isAutoQuality ? 'Currently: ${_detectedQuality}' : null,
+            subtitle: _isAutoQuality ? 'Currently: $_detectedQuality' : null,
             isSelected: _isAutoQuality,
             onTap: () {
               Navigator.pop(context);
@@ -624,7 +624,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
             label: 'Quality',
             trailing: Text(
               _isAutoQuality
-                  ? 'Auto (${_detectedQuality})'
+                  ? 'Auto ($_detectedQuality)'
                   : widget.sources[_currentSourceIndex].label,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.5),
