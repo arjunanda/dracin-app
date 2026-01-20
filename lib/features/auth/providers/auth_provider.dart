@@ -39,8 +39,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final SecureStorage _storage;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     serverClientId:
-        '917313223480-ee7mo3q4nn5goj8k13ldfrn4udorgbp5.apps.googleusercontent.com',
-    scopes: ['email', 'profile', 'openid'],
+        '917313223480-g2ierloulsutuqpulqito8nmp8u4s9kg.apps.googleusercontent.com',
+    scopes: ['email', 'profile'],
   );
 
   AuthNotifier(this._authService, this._storage) : super(AuthState()) {
