@@ -10,16 +10,22 @@ Series _$SeriesFromJson(Map<String, dynamic> json) => Series(
   id: json['id'] as String,
   title: json['title'] as String,
   description: json['description'] as String,
-  thumbnailUrl: json['thumbnail_url'] as String,
-  episodesCount: (json['episodes_count'] as num).toInt(),
+  bannerUrl: json['banner_url'] as String,
+  episodesCount: (json['episodes_count'] as num?)?.toInt(),
   isLoved: json['isLoved'] as bool? ?? false,
+  category: json['category'] == null
+      ? null
+      : Category.fromJson(json['category'] as Map<String, dynamic>),
+  status: json['status'] as String?,
 );
 
 Map<String, dynamic> _$SeriesToJson(Series instance) => <String, dynamic>{
   'id': instance.id,
   'title': instance.title,
   'description': instance.description,
-  'thumbnail_url': instance.thumbnailUrl,
+  'banner_url': instance.bannerUrl,
   'episodes_count': instance.episodesCount,
   'isLoved': instance.isLoved,
+  'category': instance.category,
+  'status': instance.status,
 };

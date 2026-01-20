@@ -1,10 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../home/models/series_model.dart';
-
 import '../../series/screens/series_shorts_screen.dart';
 
 class WatchlistScreen extends ConsumerWidget {
@@ -19,7 +19,7 @@ class WatchlistScreen extends ConsumerWidget {
         title: 'The Silent Sea',
         description:
             'A space mission to the moon to retrieve samples from an abandoned research station.',
-        thumbnailUrl: 'https://picsum.photos/seed/series_1/800/1200',
+        bannerUrl: 'https://picsum.photos/seed/series_1/800/1200',
         episodesCount: 8,
         isLoved: true,
       ),
@@ -28,7 +28,7 @@ class WatchlistScreen extends ConsumerWidget {
         title: 'All of Us Are Dead',
         description:
             'A high school becomes ground zero for a zombie virus outbreak.',
-        thumbnailUrl: 'https://picsum.photos/seed/series_2/800/1200',
+        bannerUrl: 'https://picsum.photos/seed/series_2/800/1200',
         episodesCount: 12,
         isLoved: true,
       ),
@@ -37,7 +37,7 @@ class WatchlistScreen extends ConsumerWidget {
         title: 'Squid Game',
         description:
             'Hundreds of cash-strapped players accept a strange invitation to compete in children\'s games.',
-        thumbnailUrl: 'https://picsum.photos/seed/series_3/800/1200',
+        bannerUrl: 'https://picsum.photos/seed/series_3/800/1200',
         episodesCount: 9,
         isLoved: true,
       ),
@@ -46,7 +46,7 @@ class WatchlistScreen extends ConsumerWidget {
         title: 'Kingdom',
         description:
             'While strange rumors about their ill King grip a kingdom, the crown prince becomes their only hope against a mysterious plague.',
-        thumbnailUrl: 'https://picsum.photos/seed/series_4/800/1200',
+        bannerUrl: 'https://picsum.photos/seed/series_4/800/1200',
         episodesCount: 12,
         isLoved: true,
       ),
@@ -56,12 +56,6 @@ class WatchlistScreen extends ConsumerWidget {
     final lang = ref.watch(languageProvider);
     final primaryTextColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
-    final cardColor = isDark
-        ? Colors.white.withValues(alpha: 0.05)
-        : Colors.black.withValues(alpha: 0.05);
-    final borderColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.08);
 
     return Scaffold(
       backgroundColor: isDark
@@ -74,12 +68,12 @@ class WatchlistScreen extends ConsumerWidget {
             Positioned(
               top: -100,
               right: -100,
-              child: _buildBlurBlob(AppColors.accent.withOpacity(0.1), 250),
+              child: _buildBlurBlob(AppColors.primary.withOpacity(0.1), 300),
             ),
             Positioned(
               bottom: 100,
               left: -100,
-              child: _buildBlurBlob(Colors.purple.withOpacity(0.05), 300),
+              child: _buildBlurBlob(AppColors.accent.withOpacity(0.05), 250),
             ),
           ],
 
@@ -88,7 +82,7 @@ class WatchlistScreen extends ConsumerWidget {
             slivers: [
               // Premium Header
               SliverAppBar(
-                expandedHeight: 170,
+                expandedHeight: 180,
                 floating: false,
                 pinned: true,
                 backgroundColor: Colors.transparent,
@@ -96,33 +90,60 @@ class WatchlistScreen extends ConsumerWidget {
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: false,
                   titlePadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
+                    horizontal: 24,
                     vertical: 16,
                   ),
                   title: Text(
                     AppStrings.get('my_watchlist', lang),
-                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      fontSize: 24,
-                      color: AppColors.accent,
-                      fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                      fontSize: 28,
+                      color: isDark ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.0,
                     ),
                   ),
-
                   background: Container(
-                    padding: const EdgeInsets.only(left: 20, top: 75),
-                    child: Text(
-                      AppStrings.get(
-                        'watchlist_subtitle',
-                        lang,
-                      ).replaceAll('{count}', watchlist.length.toString()),
-                      style: TextStyle(
-                        color: secondaryTextColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    padding: const EdgeInsets.only(left: 24, top: 85),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Text(
+                            AppStrings.get(
+                              'watchlist_subtitle',
+                              lang,
+                            ).replaceAll(
+                              '{count}',
+                              watchlist.length.toString(),
+                            ),
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+              ),
+              CupertinoSliverRefreshControl(
+                onRefresh: () async {
+                  await Future.delayed(const Duration(seconds: 1));
+                },
               ),
 
               // Watchlist Content
@@ -137,7 +158,7 @@ class WatchlistScreen extends ConsumerWidget {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => _buildWatchlistCard(
@@ -145,8 +166,7 @@ class WatchlistScreen extends ConsumerWidget {
                         watchlist[index],
                         primaryTextColor,
                         secondaryTextColor,
-                        cardColor,
-                        borderColor,
+                        isDark,
                       ),
                       childCount: watchlist.length,
                     ),
@@ -182,53 +202,73 @@ class WatchlistScreen extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(40),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha((0.03 * 255).toInt()),
+              color: AppColors.primary.withOpacity(0.05),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.bookmark_border_rounded,
+              Icons.bookmark_add_rounded,
               size: 80,
-              color: AppColors.accent.withAlpha((0.2 * 255).toInt()),
+              color: AppColors.primary.withOpacity(0.2),
             ),
           ),
           const SizedBox(height: 32),
           Text(
             AppStrings.get('empty_watchlist_title', lang),
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
               color: primaryTextColor,
               letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 12),
-          Text(
-            AppStrings.get('empty_watchlist_subtitle', lang),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: secondaryTextColor,
-              fontSize: 15,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 40),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
-              elevation: 10,
-              shadowColor: AppColors.accent.withAlpha((0.4 * 255).toInt()),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
+            child: Text(
+              AppStrings.get('empty_watchlist_subtitle', lang),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: secondaryTextColor,
+                fontSize: 15,
+                height: 1.5,
               ),
             ),
-            child: Text(
-              AppStrings.get('explore_dramas', lang),
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+          ),
+          const SizedBox(height: 48),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 48,
+                  vertical: 20,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                AppStrings.get('explore_dramas', lang),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
         ],
@@ -241,12 +281,11 @@ class WatchlistScreen extends ConsumerWidget {
     Series series,
     Color primaryTextColor,
     Color secondaryTextColor,
-    Color cardColor,
-    Color borderColor,
+    bool isDark,
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
-      height: 175,
+      height: 180,
       child: Stack(
         children: [
           // Main Card Body (Glassmorphic)
@@ -255,168 +294,166 @@ class WatchlistScreen extends ConsumerWidget {
             left: 0,
             right: 0,
             bottom: 0,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: borderColor, width: 1.5),
-                  ),
-                  padding: const EdgeInsets.only(
-                    left: 130,
-                    right: 20,
-                    top: 16,
-                    bottom: 16,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withOpacity(0.03)
+                    : Colors.black.withOpacity(0.03),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.black.withOpacity(0.05),
+                  width: 1.5,
+                ),
+              ),
+              padding: const EdgeInsets.only(
+                left: 140,
+                right: 20,
+                top: 20,
+                bottom: 20,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              series.title,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: primaryTextColor,
-                                letterSpacing: -0.5,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      Expanded(
+                        child: Text(
+                          series.title,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: primaryTextColor,
+                            letterSpacing: -0.5,
                           ),
-                          Icon(
-                            Icons.more_horiz,
-                            color: Colors.white.withOpacity(0.3),
-                            size: 22,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        series.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: secondaryTextColor,
-                          height: 1.4,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      Icon(
+                        Icons.more_vert_rounded,
+                        color: Colors.white.withOpacity(0.2),
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    series.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: secondaryTextColor,
+                      height: 1.4,
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                Row(
-                                  children: [
-                                    const Text(
-                                      "Ep 3",
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.accent,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                    Text(
-                                      " / ${series.episodesCount}",
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.white.withOpacity(0.3),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
+                                const Text(
+                                  "Episode 3",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.accent,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
-                                const SizedBox(height: 6),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: 0.4,
-                                    backgroundColor: Colors.white.withOpacity(
-                                      0.05,
-                                    ),
-                                    valueColor:
-                                        const AlwaysStoppedAnimation<Color>(
-                                          AppColors.accent,
-                                        ),
-                                    minHeight: 4,
+                                Text(
+                                  " / ${series.episodesCount}",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white.withOpacity(0.3),
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(width: 20),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => SeriesShortsScreen(
-                                    seriesId: series.id,
-                                    title: series.title,
-                                    thumbnailUrl: series.thumbnailUrl,
-                                    showBackButton: true,
-                                  ),
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: LinearProgressIndicator(
+                                value: 0.4,
+                                backgroundColor: Colors.white.withOpacity(0.05),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  AppColors.primary,
                                 ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: AppColors.accent,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.accent.withOpacity(0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.play_arrow_rounded,
-                                color: Colors.black,
-                                size: 26,
+                                minHeight: 6,
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => SeriesShortsScreen(
+                                seriesId: series.id,
+                                title: series.title,
+                                bannerUrl: series.bannerUrl,
+                                showBackButton: true,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ],
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
             ),
           ),
           // Floating Image with Depth
           Positioned(
             top: 0,
-            left: 12,
+            left: 16,
             child: Hero(
               tag: 'series_image_${series.id}',
               child: Container(
-                width: 105,
-                height: 140,
+                width: 110,
+                height: 150,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withOpacity(0.5),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.network(series.thumbnailUrl, fit: BoxFit.cover),
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.network(series.bannerUrl, fit: BoxFit.cover),
                 ),
               ),
             ),

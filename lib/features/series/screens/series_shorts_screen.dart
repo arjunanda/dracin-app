@@ -12,7 +12,7 @@ import '../../../core/localization/language_provider.dart';
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
   final String title;
-  final String thumbnailUrl;
+  final String bannerUrl;
   final bool showBackButton;
   final bool enableAds;
 
@@ -20,7 +20,7 @@ class SeriesShortsScreen extends ConsumerStatefulWidget {
     super.key,
     required this.seriesId,
     required this.title,
-    required this.thumbnailUrl,
+    required this.bannerUrl,
     this.showBackButton = false,
     this.enableAds = true,
   });
@@ -43,7 +43,11 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
     super.initState();
     // Force refresh episodes to get new HLS URLs
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      ref.invalidate(episodesProvider(widget.seriesId));
+      if (widget.seriesId == 'fyp') {
+        ref.invalidate(fypEpisodesProvider);
+      } else {
+        ref.invalidate(episodesProvider(widget.seriesId));
+      }
       // Preload first ad if enabled
       if (widget.enableAds) {
         await _adMobService.loadRewardedAd();
@@ -60,7 +64,10 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final episodes = ref.watch(episodesProvider(widget.seriesId));
+    final isFyp = widget.seriesId == 'fyp';
+    final episodes = isFyp
+        ? ref.watch(fypEpisodesProvider)
+        : ref.watch(episodesProvider(widget.seriesId));
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -71,7 +78,11 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
               ? const Center(child: CircularProgressIndicator())
               : RefreshIndicator(
                   onRefresh: () async {
-                    ref.invalidate(episodesProvider(widget.seriesId));
+                    if (isFyp) {
+                      ref.invalidate(fypEpisodesProvider);
+                    } else {
+                      ref.invalidate(episodesProvider(widget.seriesId));
+                    }
                   },
                   child: PageView.builder(
                     scrollDirection: Axis.vertical,
@@ -110,7 +121,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                             totalEpisodes: episodes.length,
                             seriesId: widget.seriesId,
                             seriesTitle: widget.title,
-                            thumbnailUrl: widget.thumbnailUrl,
+                            bannerUrl: widget.bannerUrl,
                           );
                         },
                       );
@@ -154,6 +165,13 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 4),
+                ] else if (isFyp) ...[
+                  Image.asset(
+                    'assets/logo.png',
+                    height: 28,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(width: 12),
                 ],
                 Expanded(
                   child: IgnorePointer(
@@ -200,7 +218,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
   final int totalEpisodes;
   final String seriesId;
   final String seriesTitle;
-  final String thumbnailUrl;
+  final String bannerUrl;
 
   const _ShortVideoItem({
     required this.episode,
@@ -208,7 +226,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
     required this.totalEpisodes,
     required this.seriesId,
     required this.seriesTitle,
-    required this.thumbnailUrl,
+    required this.bannerUrl,
   });
 
   @override
@@ -254,20 +272,32 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
             child: CustomVideoPlayer(
               key: ValueKey(widget.episode.id),
               sources: [
-                VideoSource(label: 'Auto', url: widget.episode.videoUrl),
+                VideoSource(label: 'Auto', url: widget.episode.hlsMasterUrl),
+                ...widget.episode.renditions.map(
+                  (r) => VideoSource(label: r.resolution, url: r.url),
+                ),
               ],
-              subtitles: const [
-                SubtitleSource(label: 'Indonesia', url: ''),
-                SubtitleSource(label: 'English', url: ''),
-              ],
+              subtitles: widget.episode.subtitles
+                  .map((s) => SubtitleSource(label: s.lang, url: s.file))
+                  .toList(),
               autoPlay: widget.shouldPlay,
               aspectRatio: 9 / 16,
-              fit: BoxFit.cover,
+              forceAspectRatio: true,
+              alignment: Alignment.topCenter,
+              scale: 1.10,
+              fit: BoxFit.contain,
               showDefaultProgressBar: false,
               onControllerInitialized: (controller) {
                 if (mounted) {
                   setState(() {
                     _videoController = controller;
+                  });
+                }
+              },
+              onControllerWillDispose: () {
+                if (mounted) {
+                  setState(() {
+                    _videoController = null;
                   });
                 }
               },
@@ -278,7 +308,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
         // Side Actions (TikTok Style)
         Positioned(
           right: 12,
-          bottom: 120,
+          bottom: 90,
           child: RepaintBoundary(
             child: Column(
               children: [
@@ -384,7 +414,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               children: [
                                 const Icon(
                                   Icons.video_library,
-                                  color: Colors.white,
+                                  color: AppColors.accent,
                                   size: 18,
                                 ),
                                 const SizedBox(width: 10),
@@ -476,7 +506,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.network(
-                          widget.thumbnailUrl,
+                          widget.bannerUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
@@ -796,6 +826,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
     return _InteractiveProgressBar(
       key: ValueKey(widget.episode.id),
       controller: _videoController!,
+      activeColor: AppColors.primary,
       accentColor: AppColors.accent,
     );
   }
@@ -803,11 +834,13 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
 
 class _InteractiveProgressBar extends StatefulWidget {
   final VideoPlayerController controller;
+  final Color activeColor;
   final Color accentColor;
 
   const _InteractiveProgressBar({
     super.key,
     required this.controller,
+    required this.activeColor,
     required this.accentColor,
   });
 
@@ -839,7 +872,7 @@ class _InteractiveProgressBarState extends State<_InteractiveProgressBar> {
               elevation: 4,
             ),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-            activeTrackColor: widget.accentColor,
+            activeTrackColor: widget.activeColor,
             inactiveTrackColor: Colors.white.withOpacity(0.2),
             thumbColor: widget.accentColor,
             overlayColor: widget.accentColor.withOpacity(0.2),

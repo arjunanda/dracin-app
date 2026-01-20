@@ -25,6 +25,7 @@ class SettingScreen extends ConsumerWidget {
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: isDark ? Colors.white : Colors.black,
+            letterSpacing: 1.1,
           ),
         ),
         backgroundColor: Colors.transparent,
@@ -35,23 +36,27 @@ class SettingScreen extends ConsumerWidget {
         ),
       ),
       body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
           _buildSectionHeader(context, AppStrings.get('preferences', lang)),
           _buildSettingTile(
             context,
-            icon: isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+            icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
             title: AppStrings.get('theme', lang),
             subtitle: lang == AppLanguage.id
                 ? 'Ganti antara mode terang dan gelap'
                 : 'Switch between light and dark mode',
             trailing: Switch(
               value: isDark,
+              activeColor: AppColors.primary,
+              activeTrackColor: AppColors.primary.withOpacity(0.3),
+              inactiveThumbColor: Colors.grey,
+              inactiveTrackColor: Colors.grey.withOpacity(0.3),
               onChanged: (val) {
                 ref.read(themeProvider.notifier).state = val
                     ? ThemeMode.dark
                     : ThemeMode.light;
               },
-              activeThumbColor: AppColors.accent,
             ),
             onTap: () {
               ref.read(themeProvider.notifier).state = isDark
@@ -61,7 +66,7 @@ class SettingScreen extends ConsumerWidget {
           ),
           _buildSettingTile(
             context,
-            icon: Icons.notifications_none_outlined,
+            icon: Icons.notifications_active_rounded,
             title: AppStrings.get('notifications', lang),
             subtitle: lang == AppLanguage.id
                 ? 'Atur peringatan aplikasi Anda'
@@ -76,26 +81,39 @@ class SettingScreen extends ConsumerWidget {
           ),
           _buildSettingTile(
             context,
-            icon: Icons.language_outlined,
+            icon: Icons.translate_rounded,
             title: AppStrings.get('language', lang),
             subtitle: lang == AppLanguage.id
                 ? 'Pilih bahasa pilihan Anda'
                 : 'Choose your preferred language',
-            trailing: Text(
-              lang == AppLanguage.id ? 'Bahasa Indonesia' : 'English',
-              style: const TextStyle(
-                color: AppColors.accent,
-                fontWeight: FontWeight.w600,
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              ),
+              child: Text(
+                lang == AppLanguage.id ? 'ID' : 'EN',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
               ),
             ),
             onTap: () => _showLanguageSelector(context, ref, lang),
           ),
 
-          const Divider(height: 32, indent: 16, endIndent: 16),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Divider(height: 1, thickness: 0.5),
+          ),
+
           _buildSectionHeader(context, AppStrings.get('support', lang)),
           _buildSettingTile(
             context,
-            icon: Icons.help_outline,
+            icon: Icons.help_center_rounded,
             title: AppStrings.get('help_center', lang),
             subtitle: lang == AppLanguage.id
                 ? 'Cari jawaban untuk pertanyaan umum'
@@ -111,7 +129,7 @@ class SettingScreen extends ConsumerWidget {
 
           _buildSettingTile(
             context,
-            icon: Icons.info_outline,
+            icon: Icons.info_rounded,
             title: AppStrings.get('about_dracin', lang),
             subtitle: lang == AppLanguage.id
                 ? 'Versi aplikasi, ketentuan, dan privasi'
@@ -122,17 +140,44 @@ class SettingScreen extends ConsumerWidget {
               );
             },
           ),
-          const SizedBox(height: 40),
+
+          const SizedBox(height: 60),
           Center(
-            child: Text(
-              '${AppStrings.get('version', lang)} 1.0.0',
-              style: TextStyle(
-                color: Colors.grey.withAlpha((0.5 * 255).toInt()),
-                fontSize: 12,
-              ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.black.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${AppStrings.get('version', lang)} 1.0.0',
+                    style: TextStyle(
+                      color: Colors.grey.withOpacity(0.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Made with ♥ by KiSah Team',
+                  style: TextStyle(
+                    color: AppColors.accent.withOpacity(0.5),
+                    fontSize: 10,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -157,12 +202,15 @@ class SettingScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
+                  top: Radius.circular(32),
                 ),
-                border: Border.all(
-                  color: AppColors.accent.withAlpha((0.1 * 255).toInt()),
-                  width: 1,
-                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 40,
+                    spreadRadius: 10,
+                  ),
+                ],
               ),
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -170,21 +218,22 @@ class SettingScreen extends ConsumerWidget {
                 children: [
                   Container(
                     width: 40,
-                    height: 4,
+                    height: 5,
                     decoration: BoxDecoration(
-                      color: Colors.grey.withAlpha((0.3 * 255).toInt()),
-                      borderRadius: BorderRadius.circular(2),
+                      color: Colors.grey.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   Text(
                     AppStrings.get('select_language', lang),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : Colors.black,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   _buildLanguageOption(
                     context,
                     ref,
@@ -193,7 +242,7 @@ class SettingScreen extends ConsumerWidget {
                     isSelected: lang == AppLanguage.id,
                     isDark: isDark,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   _buildLanguageOption(
                     context,
                     ref,
@@ -202,7 +251,7 @@ class SettingScreen extends ConsumerWidget {
                     isSelected: lang == AppLanguage.en,
                     isDark: isDark,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 40),
                 ],
               ),
             );
@@ -225,19 +274,20 @@ class SettingScreen extends ConsumerWidget {
         ref.read(languageProvider.notifier).state = language;
         Navigator.pop(context);
       },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.accent.withAlpha((0.1 * 255).toInt())
+              ? AppColors.primary.withOpacity(0.1)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? AppColors.accent
-                : Colors.grey.withAlpha((0.2 * 255).toInt()),
-            width: 1.5,
+                ? AppColors.primary
+                : Colors.grey.withOpacity(0.2),
+            width: 2,
           ),
         ),
         child: Row(
@@ -246,15 +296,15 @@ class SettingScreen extends ConsumerWidget {
               title,
               style: TextStyle(
                 color: isSelected
-                    ? AppColors.accent
+                    ? AppColors.primary
                     : (isDark ? Colors.white : Colors.black),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 fontSize: 16,
               ),
             ),
             const Spacer(),
             if (isSelected)
-              const Icon(Icons.check_circle, color: AppColors.accent),
+              const Icon(Icons.check_circle_rounded, color: AppColors.primary),
           ],
         ),
       ),
@@ -263,14 +313,14 @@ class SettingScreen extends ConsumerWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
       child: Text(
         title.toUpperCase(),
         style: const TextStyle(
           color: AppColors.accent,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-          letterSpacing: 1.2,
+          fontWeight: FontWeight.w900,
+          fontSize: 11,
+          letterSpacing: 2.0,
         ),
       ),
     );
@@ -285,30 +335,47 @@ class SettingScreen extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppColors.accent.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 22),
         ),
-        child: Icon(icon, color: AppColors.accent, size: 20),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isDark ? Colors.white : Colors.black,
-          fontWeight: FontWeight.w600,
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+          ),
         ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.grey.withOpacity(0.6),
+              fontSize: 12,
+              height: 1.2,
+            ),
+          ),
+        ),
+        trailing:
+            trailing ??
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.grey.withOpacity(0.3),
+              size: 16,
+            ),
+        onTap: onTap,
       ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(color: Colors.grey.withOpacity(0.7), fontSize: 12),
-      ),
-      trailing:
-          trailing ??
-          Icon(Icons.chevron_right, color: Colors.grey.withOpacity(0.5)),
-      onTap: onTap,
     );
   }
 }

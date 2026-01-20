@@ -32,10 +32,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
           Center(
             child: CustomVideoPlayer(
               sources: [
-                VideoSource(label: 'Auto', url: widget.episode.videoUrl),
+                VideoSource(label: 'Auto', url: widget.episode.hlsMasterUrl),
+                ...widget.episode.renditions.map(
+                  (r) => VideoSource(label: r.resolution, url: r.url),
+                ),
               ],
+              subtitles: widget.episode.subtitles
+                  .map((s) => SubtitleSource(label: s.lang, url: s.file))
+                  .toList(),
               autoPlay: true,
-              aspectRatio: 16/9,
+              aspectRatio: 16 / 9,
             ),
           ),
           SafeArea(

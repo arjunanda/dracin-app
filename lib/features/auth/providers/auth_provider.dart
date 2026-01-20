@@ -74,35 +74,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> login(String email, String password) async {
-    state = state.copyWith(status: AuthStatus.loading);
-    try {
-      final res = await _authService.login(email: email, password: password);
-      final token = res['token'];
-      await _storage.saveToken(token);
-      final user = await _authService.getMe();
-      state = state.copyWith(status: AuthStatus.authenticated, user: user);
-    } catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.unauthenticated,
-        error: e.toString(),
-      );
-    }
-  }
-
-  Future<void> register(String email, String password, String name) async {
-    state = state.copyWith(status: AuthStatus.loading);
-    try {
-      await _authService.register(email: email, password: password, name: name);
-      await login(email, password);
-    } catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.unauthenticated,
-        error: e.toString(),
-      );
-    }
-  }
-
   Future<void> signInWithGoogle() async {
     state = state.copyWith(status: AuthStatus.loading);
     try {

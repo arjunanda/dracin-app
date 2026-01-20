@@ -7,7 +7,12 @@ class SeriesPoster extends StatelessWidget {
   final double width;
   final double height;
 
-  const SeriesPoster({super.key, required this.series, this.width = 140, this.height = 220});
+  const SeriesPoster({
+    super.key,
+    required this.series,
+    this.width = 140,
+    this.height = 220,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +30,7 @@ class SeriesPoster extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
-                series.thumbnailUrl,
+                series.bannerUrl,
                 width: width,
                 height: height,
                 fit: BoxFit.cover,
@@ -33,7 +38,10 @@ class SeriesPoster extends StatelessWidget {
                   width: width,
                   height: height,
                   color: Colors.grey.shade900,
-                  child: const Icon(Icons.movie_outlined, color: Colors.white24),
+                  child: const Icon(
+                    Icons.movie_outlined,
+                    color: Colors.white24,
+                  ),
                 ),
               ),
             ),
@@ -42,12 +50,18 @@ class SeriesPoster extends StatelessWidget {
               series.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               '${series.episodesCount} eps',
-              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12,
+              ),
             ),
           ],
         ),

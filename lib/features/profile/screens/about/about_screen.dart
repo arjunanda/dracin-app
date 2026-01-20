@@ -34,82 +34,95 @@ class AboutScreen extends ConsumerWidget {
         child: Column(
           children: [
             const SizedBox(height: 40),
-            // Logo Section
+            // Logo Section with Premium Glow
             Center(
               child: Container(
-                width: 120,
-                height: 120,
+                width: 140,
+                height: 140,
                 decoration: BoxDecoration(
-                  color: AppColors.accent.withAlpha((0.1 * 255).toInt()),
+                  color: AppColors.primary.withOpacity(0.1),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.accent, width: 2),
+                  border: Border.all(
+                    color: AppColors.accent.withOpacity(0.5),
+                    width: 2,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.accent.withAlpha((0.2 * 255).toInt()),
-                      blurRadius: 20,
+                      color: AppColors.primary.withOpacity(0.2),
+                      blurRadius: 30,
                       spreadRadius: 5,
+                    ),
+                    BoxShadow(
+                      color: AppColors.accent.withOpacity(0.1),
+                      blurRadius: 15,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Text(
-                    'K',
-                    style: TextStyle(
-                      fontSize: 60,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.accent,
-                      fontFamily: 'Cinzel',
-                    ),
-                  ),
+                child: Padding(
+                  padding: const EdgeInsets.all(25.0),
+                  child: Image.asset('assets/logo.png', fit: BoxFit.contain),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             Text(
               AppStrings.get('app_name', lang),
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : Colors.black,
-                letterSpacing: 1.2,
+                letterSpacing: 1.5,
               ),
             ),
-            const Text(
-              'Version 1.0.0',
-              style: TextStyle(
-                color: AppColors.accent,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              ),
+              child: const Text(
+                'Version 1.0.0',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
                 AppStrings.get('about_description', lang),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: (isDark ? Colors.white : Colors.black).withAlpha(
-                    (0.7 * 255).toInt(),
+                  color: (isDark ? Colors.white : Colors.black).withOpacity(
+                    0.7,
                   ),
-                  fontSize: 16,
-                  height: 1.6,
+                  fontSize: 15,
+                  height: 1.8,
+                  letterSpacing: 0.3,
                 ),
               ),
             ),
             const SizedBox(height: 48),
+
+            // Info Cards
             _buildInfoCard(
               context,
               title: lang == AppLanguage.id
                   ? 'Dikembangkan Oleh'
                   : 'Developed By',
               content: 'KiSah Team',
-              icon: Icons.code,
+              icon: Icons.auto_awesome_mosaic_rounded,
             ),
             _buildInfoCard(
               context,
               title: lang == AppLanguage.id ? 'Hubungi Kami' : 'Contact Us',
               content: 'support@dracin.app',
-              icon: Icons.email_outlined,
+              icon: Icons.alternate_email_rounded,
             ),
             _buildInfoCard(
               context,
@@ -117,14 +130,16 @@ class AboutScreen extends ConsumerWidget {
                   ? 'Ketentuan Layanan'
                   : 'Terms of Service',
               content: 'Read our Terms',
-              icon: Icons.description_outlined,
+              icon: Icons.gavel_rounded,
             ),
-            const SizedBox(height: 40),
+
+            const SizedBox(height: 60),
             Text(
               '© 2026 KiSah Team. All Rights Reserved.',
               style: TextStyle(
-                color: Colors.grey.withAlpha((0.5 * 255).toInt()),
-                fontSize: 12,
+                color: Colors.grey.withOpacity(0.5),
+                fontSize: 11,
+                letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: 40),
@@ -142,42 +157,55 @@ class AboutScreen extends ConsumerWidget {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.white.withAlpha((0.05 * 255).toInt())
-            : Colors.black.withAlpha((0.05 * 255).toInt()),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.accent.withAlpha((0.1 * 255).toInt()),
-        ),
+            ? Colors.white.withOpacity(0.03)
+            : Colors.black.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.accent.withOpacity(0.1), width: 1),
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.accent, size: 24),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.accent,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 24),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: AppColors.accent.withOpacity(0.8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                content,
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 4),
+                Text(
+                  content,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: AppColors.accent.withOpacity(0.3),
+            size: 16,
           ),
         ],
       ),

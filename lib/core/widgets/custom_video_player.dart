@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:dio/dio.dart';
+import '../theme/app_colors.dart';
 
 class VideoSource {
   final String label;
@@ -21,17 +23,26 @@ class CustomVideoPlayer extends StatefulWidget {
   final double aspectRatio;
   final BoxFit fit;
   final bool showDefaultProgressBar;
+  final bool
+  forceAspectRatio; // Force use of aspectRatio instead of video's native ratio
+  final Alignment alignment; // Alignment for video positioning
+  final double scale; // Scale factor for video (1.0 = normal, >1.0 = zoom in)
   final Function(VideoPlayerController)? onControllerInitialized;
+  final VoidCallback? onControllerWillDispose;
 
   const CustomVideoPlayer({
     super.key,
     required this.sources,
     this.subtitles,
     this.autoPlay = false,
-    this.aspectRatio = 16 / 9,
+    this.aspectRatio = 9 / 16,
     this.fit = BoxFit.contain,
     this.showDefaultProgressBar = true,
+    this.forceAspectRatio = false,
+    this.alignment = Alignment.center,
+    this.scale = 1.0,
     this.onControllerInitialized,
+    this.onControllerWillDispose,
   });
 
   @override
@@ -47,103 +58,131 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
   int _selectedSubtitleIndex = -1; // -1 means Off
   bool _isAutoQuality = true; // Auto quality mode by default
   String _detectedQuality = 'Auto'; // Current detected quality
+  bool _isSwitchingQuality = false; // Flag to prevent multiple initializations
 
   @override
   void initState() {
     super.initState();
     debugPrint('🎬 CustomVideoPlayer: initState');
+
+    // Set default subtitle to Indonesian if available
+    if (widget.subtitles != null && widget.subtitles!.isNotEmpty) {
+      final idIndex = widget.subtitles!.indexWhere(
+        (s) =>
+            s.label.toLowerCase().contains('id') ||
+            s.label.toLowerCase().contains('indo'),
+      );
+      if (idIndex != -1) {
+        _selectedSubtitleIndex = idIndex;
+        _loadSubtitle(widget.subtitles![idIndex].url);
+      }
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initPlayer();
     });
   }
 
   Future<void> _initPlayer() async {
-    debugPrint('🎬 CustomVideoPlayer: _initPlayer started');
+    if (_isSwitchingQuality) return;
 
-    // Dispose previous controller
-    if (_controller != null) {
-      debugPrint('🎬 CustomVideoPlayer: Disposing previous controller');
-      await _controller!.dispose();
-      _controller = null;
+    final bool isFirstInit = _controller == null;
+    debugPrint(
+      '🎬 CustomVideoPlayer: _initPlayer started (isFirstInit: $isFirstInit)',
+    );
+
+    if (isFirstInit) {
+      setState(() {
+        _isInitialized = false;
+      });
     }
 
-    if (!mounted) {
-      debugPrint('🎬 CustomVideoPlayer: Widget not mounted, aborting');
-      return;
-    }
-
-    setState(() {
-      _isInitialized = false;
-    });
+    _isSwitchingQuality = true;
+    VideoPlayerController? nextController;
 
     try {
       // Auto-detect quality based on available sources
       if (_isAutoQuality && widget.sources.length > 1) {
         _currentSourceIndex = _detectBestQuality();
-        debugPrint(
-          '🎬 CustomVideoPlayer: Auto quality selected index $_currentSourceIndex',
-        );
       }
 
       final url = widget.sources[_currentSourceIndex].url;
       debugPrint('🎬 CustomVideoPlayer: Initializing with URL: $url');
 
-      _controller = VideoPlayerController.networkUrl(Uri.parse(url));
-
-      debugPrint('🎬 CustomVideoPlayer: Starting initialization...');
+      nextController = VideoPlayerController.networkUrl(Uri.parse(url));
 
       // Add timeout to prevent infinite hang
-      await _controller!.initialize().timeout(
-        const Duration(seconds: 30),
+      await nextController.initialize().timeout(
+        const Duration(seconds: 20),
         onTimeout: () {
-          debugPrint('❌ CustomVideoPlayer: Initialization timeout after 30s');
+          debugPrint('❌ CustomVideoPlayer: Initialization timeout after 20s');
           throw TimeoutException('Video initialization timeout');
         },
       );
 
-      debugPrint('🎬 CustomVideoPlayer: Initialization complete');
-
       if (!mounted) {
-        debugPrint('🎬 CustomVideoPlayer: Widget unmounted after init');
+        await nextController.dispose();
         return;
       }
 
-      _controller!.setLooping(true);
-      debugPrint('🎬 CustomVideoPlayer: Looping enabled');
+      // Swap controllers
+      final oldController = _controller;
+      final wasPlaying = oldController?.value.isPlaying ?? widget.autoPlay;
+      final position = oldController?.value.position ?? Duration.zero;
 
-      if (widget.autoPlay) {
-        debugPrint('🎬 CustomVideoPlayer: Starting autoplay');
+      _controller = nextController;
+      _controller!.setLooping(true);
+
+      // Restore state
+      if (position > Duration.zero) {
+        await _controller!.seekTo(position);
+      }
+      if (wasPlaying) {
         await _controller!.play();
       }
 
-      setState(() {
-        _isInitialized = true;
-        _detectedQuality = widget.sources[_currentSourceIndex].label;
-      });
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+          _detectedQuality = widget.sources[_currentSourceIndex].label;
+        });
 
-      if (widget.onControllerInitialized != null) {
-        Future.microtask(() {
-          if (mounted) widget.onControllerInitialized!(_controller!);
+        if (widget.onControllerInitialized != null) {
+          widget.onControllerInitialized!(_controller!);
+        }
+      }
+
+      // Dispose old controller AFTER swap and rebuild
+      if (oldController != null) {
+        debugPrint('🎬 CustomVideoPlayer: Disposing old controller');
+        if (widget.onControllerWillDispose != null) {
+          widget.onControllerWillDispose!();
+        }
+        // Small delay to ensure UI has switched to new controller
+        Future.delayed(const Duration(milliseconds: 100), () {
+          oldController.dispose();
         });
       }
 
       debugPrint('🎬 CustomVideoPlayer: Ready! Quality: $_detectedQuality');
-    } on TimeoutException catch (e) {
-      debugPrint('❌ CustomVideoPlayer Timeout: $e');
-      debugPrint('❌ This might be a network issue or invalid video URL');
+    } catch (e, stackTrace) {
+      debugPrint('❌ CustomVideoPlayer Error: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
 
-      if (mounted) {
+      // If it fails, we should ensure the failed controller is disposed
+      if (nextController != null) {
+        await nextController.dispose();
+      }
+
+      if (isFirstInit && mounted) {
         setState(() {
           _isInitialized = false;
         });
       }
-    } catch (e, stackTrace) {
-      debugPrint('❌ CustomVideoPlayer Init Error: $e');
-      debugPrint('❌ Stack trace: $stackTrace');
-
+    } finally {
       if (mounted) {
         setState(() {
-          _isInitialized = false;
+          _isSwitchingQuality = false;
         });
       }
     }
@@ -152,13 +191,8 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
   /// Auto-detect best quality based on simple heuristic
   /// In production, this should use actual bandwidth measurement
   int _detectBestQuality() {
-    // Simple heuristic: prefer middle quality for auto mode
-    // In real app, measure bandwidth and choose accordingly
-    if (widget.sources.length >= 3) {
-      return 1; // Middle quality (usually 720p)
-    } else if (widget.sources.length == 2) {
-      return 0; // Lower quality for 2 options
-    }
+    // For HLS, index 0 is always the Master Playlist (Auto)
+    // which handles adaptive streaming automatically
     return 0;
   }
 
@@ -196,35 +230,109 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
   }
 
   void _changeQuality(int index) {
-    debugPrint('🎬 CustomVideoPlayer: _changeQuality to index $index');
-    if (index == _currentSourceIndex && !_isAutoQuality) {
-      debugPrint('🎬 CustomVideoPlayer: Same quality, skipping');
-      return;
-    }
+    if (_isSwitchingQuality) return;
 
-    final position = _controller?.value.position ?? Duration.zero;
-    final wasPlaying = _controller?.value.isPlaying ?? false;
+    if (index == _currentSourceIndex && !_isAutoQuality) return;
 
     setState(() {
       _currentSourceIndex = index;
-      _isAutoQuality = false; // Disable auto when manually selected
-      _detectedQuality = widget.sources[index].label;
+      _isAutoQuality = false;
     });
 
-    debugPrint(
-      '🎬 CustomVideoPlayer: Switching to ${widget.sources[index].label} at position $position',
-    );
+    _initPlayer();
+  }
 
-    _initPlayer().then((_) {
-      if (_isInitialized) {
-        debugPrint('🎬 CustomVideoPlayer: Seeking to $position');
-        _controller?.seekTo(position);
-        if (wasPlaying) {
-          debugPrint('🎬 CustomVideoPlayer: Resuming playback');
-          _controller?.play();
+  String? _currentSubtitleText;
+  Timer? _subtitleUpdateTimer;
+
+  Future<void> _loadSubtitle(String url) async {
+    try {
+      debugPrint('🎬 Loading subtitle from: $url');
+
+      if (url.isEmpty) {
+        setState(() => _currentSubtitleText = null);
+        return;
+      }
+
+      // Fetch subtitle file
+      final response = await Dio().get(url);
+      final subtitleContent = response.data as String;
+
+      debugPrint('🎬 Subtitle loaded successfully');
+
+      // Start subtitle update timer
+      _subtitleUpdateTimer?.cancel();
+      _subtitleUpdateTimer = Timer.periodic(const Duration(milliseconds: 100), (
+        _,
+      ) {
+        if (_controller != null && _controller!.value.isInitialized) {
+          final position = _controller!.value.position;
+          final text = _getSubtitleTextAtPosition(subtitleContent, position);
+          if (_currentSubtitleText != text) {
+            setState(() => _currentSubtitleText = text);
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('❌ Error loading subtitle: $e');
+    }
+  }
+
+  String? _getSubtitleTextAtPosition(String vttContent, Duration position) {
+    // Simple VTT parser
+    final lines = vttContent.split('\n');
+    final positionMs = position.inMilliseconds;
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i].trim();
+
+      // Check if line contains timestamp (e.g., "00:00:01.000 --> 00:00:03.000")
+      if (line.contains('-->')) {
+        final parts = line.split('-->');
+        if (parts.length == 2) {
+          final startMs = _parseVttTimestamp(parts[0].trim());
+          final endMs = _parseVttTimestamp(parts[1].trim());
+
+          if (positionMs >= startMs && positionMs <= endMs) {
+            // Get subtitle text (next non-empty lines)
+            final textLines = <String>[];
+            for (int j = i + 1; j < lines.length; j++) {
+              final textLine = lines[j].trim();
+              if (textLine.isEmpty) break;
+              if (!textLine.contains('-->') && !textLine.startsWith('WEBVTT')) {
+                textLines.add(textLine);
+              }
+            }
+            return textLines.join('\n');
+          }
         }
       }
-    });
+    }
+    return null;
+  }
+
+  int _parseVttTimestamp(String timestamp) {
+    // Parse timestamp like "00:00:01.000" or "00:01:23.456"
+    try {
+      final parts = timestamp.split(':');
+      if (parts.length >= 2) {
+        final hours = parts.length == 3 ? int.parse(parts[0]) : 0;
+        final minutes = int.parse(parts[parts.length - 2]);
+        final secondsParts = parts[parts.length - 1].split('.');
+        final seconds = int.parse(secondsParts[0]);
+        final milliseconds = secondsParts.length > 1
+            ? int.parse(secondsParts[1].padRight(3, '0').substring(0, 3))
+            : 0;
+
+        return (hours * 3600000) +
+            (minutes * 60000) +
+            (seconds * 1000) +
+            milliseconds;
+      }
+    } catch (e) {
+      debugPrint('Error parsing timestamp: $timestamp - $e');
+    }
+    return 0;
   }
 
   void _enableAutoQuality() {
@@ -269,7 +377,13 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
   void dispose() {
     debugPrint('🎬 CustomVideoPlayer: dispose');
     _hideTimer?.cancel();
-    _controller?.dispose();
+    _subtitleUpdateTimer?.cancel();
+    if (_controller != null) {
+      if (widget.onControllerWillDispose != null) {
+        widget.onControllerWillDispose!();
+      }
+      _controller!.dispose();
+    }
     super.dispose();
   }
 
@@ -279,7 +393,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
       return Container(
         color: Colors.black,
         child: const Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(color: AppColors.primary),
         ),
       );
     }
@@ -290,14 +404,80 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
         fit: StackFit.expand,
         children: [
           // Video Player
-          FittedBox(
-            fit: widget.fit,
-            child: SizedBox(
-              width: _controller!.value.size.width,
-              height: _controller!.value.size.height,
-              child: VideoPlayer(_controller!),
+          widget.fit == BoxFit.cover
+              ? SizedBox.expand(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    alignment: widget.alignment,
+                    child: SizedBox(
+                      width: _controller!.value.size.width,
+                      height: _controller!.value.size.height,
+                      child: VideoPlayer(_controller!),
+                    ),
+                  ),
+                )
+              : Align(
+                  alignment: widget.alignment,
+                  child: Transform.scale(
+                    scale: widget.scale,
+                    alignment: widget.alignment,
+                    child: AspectRatio(
+                      aspectRatio: widget.forceAspectRatio
+                          ? widget.aspectRatio
+                          : _controller!.value.aspectRatio,
+                      child: VideoPlayer(_controller!),
+                    ),
+                  ),
+                ),
+
+          // Subtitles
+          if (_selectedSubtitleIndex != -1 && _currentSubtitleText != null)
+            Positioned(
+              bottom: 120,
+              left: 20,
+              right: 20,
+              child: Text(
+                _currentSubtitleText!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  height: 1.4,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.9),
+                      blurRadius: 8,
+                      offset: const Offset(0, 0),
+                    ),
+                    Shadow(
+                      color: Colors.black.withOpacity(0.9),
+                      blurRadius: 4,
+                      offset: const Offset(2, 2),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
+
+          // Loading Overlay when switching quality
+          if (_isSwitchingQuality)
+            Container(
+              color: Colors.black54,
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: AppColors.primary),
+                    SizedBox(height: 16),
+                    Text(
+                      'Switching quality...',
+                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // Custom Controls Overlay
           AnimatedOpacity(
@@ -358,13 +538,14 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
                             ),
                           const SizedBox(width: 12),
 
-                          // Subtitle Button (placeholder)
-                          _buildControlButton(
-                            icon: Icons.closed_caption,
-                            onTap: () {
-                              // TODO: Implement subtitle selection
-                            },
-                          ),
+                          // Subtitle Button
+                          if (widget.subtitles != null &&
+                              widget.subtitles!.isNotEmpty)
+                            _buildControlButton(
+                              icon: Icons.closed_caption,
+                              isActive: _selectedSubtitleIndex != -1,
+                              onTap: () => _showSubtitleMenu(context),
+                            ),
                           const SizedBox(width: 12),
 
                           // More Options Button
@@ -397,6 +578,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
   Widget _buildControlButton({
     required IconData icon,
     String? label,
+    bool isActive = false,
     required VoidCallback onTap,
   }) {
     final bool isCircle = label == null;
@@ -410,10 +592,17 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
             ? EdgeInsets.zero
             : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.7),
+          color: isActive
+              ? Theme.of(context).primaryColor.withOpacity(0.8)
+              : Colors.black.withOpacity(0.7),
           shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
           borderRadius: isCircle ? null : BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+          border: Border.all(
+            color: isActive
+                ? Theme.of(context).primaryColor.withOpacity(0.5)
+                : Colors.white.withOpacity(0.2),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.5),
@@ -600,6 +789,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
               isSelected: isSelected,
               onTap: () {
                 setState(() => _selectedSubtitleIndex = index);
+                _loadSubtitle(sub.url);
                 Navigator.pop(context);
               },
             );

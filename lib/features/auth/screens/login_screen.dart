@@ -66,13 +66,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
+                    color: AppColors.primary.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.movie_filter_rounded,
-                    size: 80,
-                    color: AppColors.accent,
+                  child: Image.asset(
+                    'assets/logo.png',
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -110,29 +111,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 },
               ),
 
-              const SizedBox(height: 16),
-              _buildSocialButton(
-                label: AppStrings.get('continue_facebook', lang),
-                icon: FontAwesomeIcons.facebook,
-                iconColor: Colors.white,
-                color: const Color(0xFF1877F2),
-                textColor: Colors.white,
-                onPressed: () {
-                  _showComingSoon(context, 'Facebook', lang);
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildSocialButton(
-                label: AppStrings.get('continue_tiktok', lang),
-                icon: FontAwesomeIcons.tiktok,
-                iconColor: Colors.white,
-                color: Colors.black,
-                textColor: Colors.white,
-                onPressed: () {
-                  _showComingSoon(context, 'TikTok', lang);
-                },
-              ),
-
               const SizedBox(height: 48),
 
               Text(
@@ -150,21 +128,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showComingSoon(
-    BuildContext context,
-    String provider,
-    AppLanguage lang,
-  ) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$provider Login ${lang == AppLanguage.id ? 'akan segera datang!' : 'is coming soon!'}',
-        ),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -198,7 +161,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               width: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
               ),
             )
           : Stack(

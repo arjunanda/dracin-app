@@ -70,9 +70,7 @@ class SeriesEpisodesScreen extends ConsumerWidget {
                     backgroundImage: NetworkImage(thumbnailUrl),
                   ),
                   title: Text('Episode ${e.episodeNumber}: ${e.title}'),
-                  subtitle: e.duration != null
-                      ? Text('${(e.duration! / 60).floor()} min')
-                      : null,
+                  subtitle: Text('${e.viewCount} views'),
                   trailing: const Icon(Icons.play_arrow),
                 );
               },

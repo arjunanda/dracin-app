@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/cupertino.dart';
@@ -6,6 +7,7 @@ import '../../../core/localization/language_provider.dart';
 
 import '../../series/screens/series_shorts_screen.dart';
 import '../providers/series_provider.dart';
+import '../providers/category_provider.dart';
 import 'search_screen.dart';
 import '../models/series_model.dart';
 
@@ -19,19 +21,18 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scrollController = ScrollController();
   int _selectedCategoryIndex = 0;
+
   List<String> _getCategories(AppLanguage lang) {
     return [
       AppStrings.get('trending', lang),
       AppStrings.get('latest', lang),
       AppStrings.get('recommended', lang),
-      AppStrings.get('top_rated', lang),
     ];
   }
 
   @override
   void initState() {
     super.initState();
-    // Keep infinite scroll behavior, but getSeries returns stubbed data.
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 200) {
@@ -51,109 +52,167 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: isDark
           ? AppColors.darkBackground
           : AppColors.lightBackground,
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          SliverAppBar(
-            floating: true,
-            title: Text(
-              'KiSah',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontSize: 24,
-                color: AppColors.accent,
-                fontWeight: FontWeight.bold,
-              ),
+      body: Stack(
+        children: [
+          // Background Blobs for Depth
+          if (isDark) ...[
+            Positioned(
+              top: -100,
+              right: -100,
+              child: _buildBlurBlob(AppColors.primary.withOpacity(0.1), 300),
             ),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            centerTitle: false,
-            actions: [
-              IconButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SearchScreen()),
-                  );
-                },
-                icon: const Icon(Icons.search, size: 28),
+            Positioned(
+              bottom: 100,
+              left: -100,
+              child: _buildBlurBlob(AppColors.accent.withOpacity(0.05), 250),
+            ),
+          ],
+
+          CustomScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            slivers: [
+              SliverAppBar(
+                floating: true,
+                title: Image.asset(
+                  'assets/logo.png',
+                  height: 50,
+                  fit: BoxFit.contain,
+                ),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                centerTitle: false,
+                actions: [
+                  Container(
+                    margin: const EdgeInsets.only(right: 16),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.black.withOpacity(0.05),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const SearchScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.search_rounded, size: 24),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
+              CupertinoSliverRefreshControl(
+                onRefresh: () => ref
+                    .read(seriesProvider.notifier)
+                    .getSeries(
+                      refresh: true,
+                      type: state.currentType,
+                      categoryId: state.categoryId,
+                    ),
+              ),
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCategorySelector(isDark, categories),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+              ..._buildSelectedSection(context, state.series),
             ],
           ),
-          CupertinoSliverRefreshControl(
-            onRefresh: () =>
-                ref.read(seriesProvider.notifier).getSeries(refresh: true),
-          ),
-          SliverToBoxAdapter(child: _buildCategorySelector(isDark, categories)),
-          ..._buildSelectedSection(context, state.series),
         ],
       ),
     );
   }
 
-  Widget _buildCategorySelector(bool isDark, List<String> categories) {
-    return SizedBox(
-      height: 60,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final isSelected = _selectedCategoryIndex == index;
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedCategoryIndex = index;
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.accent : Colors.transparent,
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.accent
-                        : Colors.grey.withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppColors.accent.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : [],
-                ),
-                child: Center(
-                  child: Text(
-                    categories[index],
+  Widget _buildCategorySelector(bool isDark, List<String> staticCategories) {
+    final categoriesAsync = ref.watch(categoriesProvider);
 
+    return categoriesAsync.when(
+      data: (categories) {
+        final allCategories = [
+          ...staticCategories,
+          ...categories.map((c) => c.name),
+        ];
+
+        return Container(
+          height: 42,
+          margin: const EdgeInsets.symmetric(vertical: 12),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: allCategories.length,
+            itemBuilder: (context, index) {
+              final isSelected = _selectedCategoryIndex == index;
+              final categoryName = allCategories[index];
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedCategoryIndex = index;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.only(right: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary
+                        : (isDark
+                              ? Colors.white.withOpacity(0.05)
+                              : Colors.black.withOpacity(0.05)),
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(
+                      color: isSelected
+                          ? Colors.white.withOpacity(0.2)
+                          : Colors.transparent,
+                      width: 1,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Text(
+                    categoryName,
                     style: TextStyle(
                       color: isSelected
-                          ? Colors.black
+                          ? Colors.white
                           : (isDark
-                                ? AppColors.darkTextSecondary
+                                ? AppColors.darkTextSecondary.withOpacity(0.8)
                                 : AppColors.lightTextSecondary),
                       fontWeight: isSelected
-                          ? FontWeight.bold
+                          ? FontWeight.w700
                           : FontWeight.w500,
-                      fontSize: 14,
+                      fontSize: 13,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
-              ),
-            ),
-          );
-        },
+              );
+            },
+          ),
+        );
+      },
+      loading: () => const SizedBox(
+        height: 66,
+        child: Center(child: CupertinoActivityIndicator()),
       ),
+      error: (err, stack) => const SizedBox.shrink(),
     );
   }
 
@@ -166,30 +225,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         const SliverToBoxAdapter(
           child: SizedBox(
             height: 400,
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: CupertinoActivityIndicator()),
           ),
         ),
       ];
     }
 
-    // For demo purposes, we shuffle or rotate the list to make sections look different
-    // In a real app, we would filter or fetch different data
-    final sectionSeries = List<Series>.from(series)..shuffle();
-    final displaySeries = sectionSeries
-        .toList(); // Show all for the selected category
-
     return [
       SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         sliver: SliverGrid(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 0.7,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            crossAxisCount: 2,
+            childAspectRatio: 0.65,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 20,
           ),
           delegate: SliverChildBuilderDelegate((context, index) {
-            final s = displaySeries[index % displaySeries.length];
+            final s = series[index % series.length];
             return GestureDetector(
               onTap: () {
                 Navigator.of(context).push(
@@ -197,7 +250,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     builder: (_) => SeriesShortsScreen(
                       seriesId: s.id,
                       title: s.title,
-                      thumbnailUrl: s.thumbnailUrl,
+                      bannerUrl: s.bannerUrl,
                       showBackButton: true,
                     ),
                   ),
@@ -205,22 +258,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               },
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
                     BoxShadow(
-                      color: Colors.black45,
-                      blurRadius: 6,
-                      offset: Offset(0, 3),
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(24),
                   child: Stack(
                     children: [
                       Positioned.fill(
                         child: Image.network(
-                          s.thumbnailUrl,
+                          s.bannerUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, st) =>
                               Container(color: Colors.grey.shade900),
@@ -234,40 +287,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               end: Alignment.bottomCenter,
                               colors: [
                                 Colors.transparent,
-                                Colors.black.withOpacity(0.8),
+                                Colors.black.withOpacity(0.1),
+                                Colors.black.withOpacity(0.9),
                               ],
-                              stops: const [0.5, 1.0],
+                              stops: const [0.4, 0.6, 1.0],
                             ),
                           ),
                         ),
                       ),
                       Positioned(
-                        left: 8,
-                        right: 8,
-                        bottom: 8,
+                        left: 12,
+                        right: 12,
+                        bottom: 12,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               s.title,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                                letterSpacing: -0.3,
+                                height: 1.2,
+                              ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Text(
-                              s.description,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                              '${s.episodesCount ?? 0} Episodes',
+                              style: const TextStyle(
+                                color: AppColors.primary,
                                 fontSize: 10,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
@@ -278,10 +332,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             );
-          }, childCount: displaySeries.length),
+          }, childCount: series.length),
         ),
       ),
-      const SliverToBoxAdapter(child: SizedBox(height: 40)),
+      if (ref.watch(seriesProvider).isLoading && series.isNotEmpty)
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(child: CupertinoActivityIndicator()),
+          ),
+        ),
     ];
+  }
+
+  Widget _buildBlurBlob(Color color, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+        child: Container(color: Colors.transparent),
+      ),
+    );
   }
 }

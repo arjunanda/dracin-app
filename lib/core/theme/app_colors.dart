@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Brand Colors - Imperial Dark Romance palette
-  static const Color primary = Color(0xFF9B1B22); // Deep Crimson (primary)
-  static const Color secondary = Color(0xFF6E1A22); // Dark burgundy for accents
+  static const Color primary = Color(0xFFED3237); // #ed3237
+  static const Color secondary = Color(0xFFB31D21); // Darker shade of primary
   static const Color accent = Color(0xFFD4AF37); // Gold accent
 
   // Dark Theme Colors (cinematic)
   static const Color darkBackground = Color(0xFF000000); // Pure black for drama
-  static const Color darkSurface = Color(0xFF0B0B0B); // Slightly lighter than black
+  static const Color darkSurface = Color(
+    0xFF0B0B0B,
+  ); // Slightly lighter than black
   static const Color darkTextPrimary = Color(0xFFF8F4EF); // Warm off-white
-  static const Color darkTextSecondary = Color(0xFFBFAF8C); // Muted goldish secondary text
+  static const Color darkTextSecondary = Color(
+    0xFFBFAF8C,
+  ); // Muted goldish secondary text
 
   // Light Theme (kept but muted)
   static const Color lightBackground = Color(0xFFF1F5F9); // Slate 100

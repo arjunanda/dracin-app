@@ -46,7 +46,7 @@ class SeriesCard extends StatelessWidget {
               // Thumbnail
               Positioned.fill(
                 child: Image.network(
-                  series.thumbnailUrl,
+                  series.bannerUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
                     color: AppColors.darkSurface,
@@ -124,7 +124,7 @@ class SeriesCard extends StatelessWidget {
                         const Spacer(),
                         const Icon(
                           Icons.play_circle_fill,
-                          color: Colors.white,
+                          color: AppColors.accent,
                           size: 40,
                         ),
                       ],

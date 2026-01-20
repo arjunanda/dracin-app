@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/episode_model.dart';
-import '../../home/services/series_service.dart';
+import '../services/series_service.dart';
 import '../../home/providers/series_provider.dart';
 
 final episodesProvider =
@@ -22,10 +22,34 @@ class EpisodesNotifier extends StateNotifier<List<Episode>> {
 
   Future<void> loadEpisodes() async {
     try {
-      final episodes = await _service.getEpisodes(_seriesId);
+      final response = await _service.getEpisodes(_seriesId);
+      final episodes = response.data ?? [];
       // Ensure sorted by episode_number ASC
       episodes.sort((a, b) => a.episodeNumber.compareTo(b.episodeNumber));
       state = episodes;
+    } catch (e) {
+      // Handle error
+    }
+  }
+}
+
+final fypEpisodesProvider =
+    StateNotifierProvider<FypEpisodesNotifier, List<Episode>>((ref) {
+      final service = ref.read(seriesServiceProvider);
+      return FypEpisodesNotifier(service);
+    });
+
+class FypEpisodesNotifier extends StateNotifier<List<Episode>> {
+  final SeriesService _service;
+
+  FypEpisodesNotifier(this._service) : super([]) {
+    loadFypEpisodes();
+  }
+
+  Future<void> loadFypEpisodes() async {
+    try {
+      final response = await _service.getFypEpisodes();
+      state = response.data ?? [];
     } catch (e) {
       // Handle error
     }
