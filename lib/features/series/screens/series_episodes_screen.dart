@@ -24,7 +24,7 @@ class SeriesEpisodesScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.accent,
             fontWeight: FontWeight.w700,
           ),
