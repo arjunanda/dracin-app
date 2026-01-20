@@ -125,15 +125,15 @@ class SeriesDetailScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 16),
-                                Row(
+                                const Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.star_rounded,
                                       color: AppColors.accent,
                                       size: 22,
                                     ),
-                                    const SizedBox(width: 6),
-                                    const Text(
+                                    SizedBox(width: 6),
+                                    Text(
                                       '4.8',
                                       style: TextStyle(
                                         color: Colors.white,

@@ -63,6 +63,6 @@ class SeriesService {
 
   Future<ApiResponse<void>> toggleLove(String id, bool love) async {
     final response = await _dio.post('series/$id/love', data: {'love': love});
-    return ApiResponse<void>.fromJson(response.data, (json) => null);
+    return ApiResponse<void>.fromJson(response.data, (json) {});
   }
 }

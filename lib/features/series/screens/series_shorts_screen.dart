@@ -596,7 +596,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                             ),
                             child: Text(
                               '${widget.totalEpisodes} Episodes',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppColors.accent,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,

@@ -54,7 +54,6 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: AppColors.darkBackground,
       primaryColor: AppColors.primary,
-      indicatorColor: AppColors.accent,
       // Distinctive typography: Cinzel for headings (cinematic/imperial), Rubik for UI/body
       textTheme: GoogleFonts.rubikTextTheme().copyWith(
         displayLarge: GoogleFonts.cinzel(
@@ -85,6 +84,7 @@ class AppTheme {
         ),
         color: AppColors.darkSurface,
       ),
+      tabBarTheme: TabBarThemeData(indicatorColor: AppColors.accent),
     );
   }
 }

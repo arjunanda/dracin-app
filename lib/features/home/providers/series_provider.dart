@@ -1,4 +1,3 @@
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/series_model.dart';
 import '../../series/services/series_service.dart';
