@@ -343,16 +343,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           color: Colors.white.withOpacity(0.2),
                         ),
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.star_rounded,
                             color: AppColors.accent,
                             size: 14,
                           ),
-                          const SizedBox(width: 4),
-                          const Text(
+                          SizedBox(width: 4),
+                          Text(
                             '9.8',
                             style: TextStyle(
                               color: Colors.white,

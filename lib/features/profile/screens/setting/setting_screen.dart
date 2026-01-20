@@ -48,7 +48,7 @@ class SettingScreen extends ConsumerWidget {
                 : 'Switch between light and dark mode',
             trailing: Switch(
               value: isDark,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               activeTrackColor: AppColors.primary.withOpacity(0.3),
               inactiveThumbColor: Colors.grey,
               inactiveTrackColor: Colors.grey.withOpacity(0.3),
