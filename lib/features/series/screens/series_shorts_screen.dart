@@ -39,6 +39,7 @@ class SeriesShortsScreen extends ConsumerStatefulWidget {
 class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
   late PageController _pageController;
   final ValueNotifier<int> _currentIndexNotifier = ValueNotifier<int>(0);
+  final ValueNotifier<bool> _isAdShowingNotifier = ValueNotifier<bool>(false);
 
   // AdMob instances
   final AdMobService _adMobService = AdMobService();
@@ -58,9 +59,10 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
       } else {
         ref.invalidate(episodesProvider(widget.seriesId));
       }
-      // Preload first ad if enabled
+      // Preload ads if enabled
       if (widget.enableAds) {
         await _adMobService.loadRewardedAd();
+        await _adMobService.loadInterstitialAd();
       }
     });
   }
@@ -69,6 +71,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
   void dispose() {
     _pageController.dispose();
     _currentIndexNotifier.dispose();
+    _isAdShowingNotifier.dispose();
     super.dispose();
   }
 
@@ -99,7 +102,6 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                     controller: _pageController,
                     itemCount: episodes.length,
                     onPageChanged: (index) async {
-                      _currentIndexNotifier.value = index;
                       _adManager.recordScroll(index);
 
                       // Check if we should show an ad (cumulative scrolls)
@@ -107,17 +109,19 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                           !_isLoadingAd &&
                           _adManager.shouldShowAd(index)) {
                         setState(() => _isLoadingAd = true);
-                        final shown = await _adMobService.showRewardedAd(
-                          onUserEarnedReward: (reward) {
-                            debugPrint(
-                              '🎁 User earned reward: ${reward.amount} ${reward.type}',
-                            );
-                          },
-                        );
+                        _isAdShowingNotifier.value = true;
+                        _currentIndexNotifier.value = index;
+
+                        // Use Interstitial Ad for now
+                        final shown = await _adMobService.showInterstitialAd();
+
                         if (shown) {
                           _adManager.onAdShown(index);
                         }
                         setState(() => _isLoadingAd = false);
+                        _isAdShowingNotifier.value = false;
+                      } else {
+                        _currentIndexNotifier.value = index;
                       }
                     },
                     itemBuilder: (context, index) {
@@ -125,60 +129,66 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                       return ValueListenableBuilder<int>(
                         valueListenable: _currentIndexNotifier,
                         builder: (context, currentIndex, _) {
-                          return _ShortVideoItem(
-                            key: ValueKey(episode.id),
-                            episode: episode,
-                            shouldPlay: index == currentIndex && !_isLoadingAd,
-                            shouldLoad:
-                                index == currentIndex ||
-                                index == currentIndex + 1,
-                            totalEpisodes: episodes.length,
-                            seriesId: widget.seriesId,
-                            seriesTitle: widget.title,
-                            bannerUrl: widget.bannerUrl,
-                            onLike: () {
-                              if (isFyp) {
-                                ref
-                                    .read(fypEpisodesProvider.notifier)
-                                    .toggleLike(episode.id);
-                              } else {
-                                ref
-                                    .read(
-                                      episodesProvider(
-                                        widget.seriesId,
-                                      ).notifier,
-                                    )
-                                    .toggleLike(episode.id);
-                              }
+                          return ValueListenableBuilder<bool>(
+                            valueListenable: _isAdShowingNotifier,
+                            builder: (context, isAdShowing, _) {
+                              return _ShortVideoItem(
+                                key: ValueKey(episode.id),
+                                episode: episode,
+                                shouldPlay:
+                                    index == currentIndex && !isAdShowing,
+                                shouldLoad:
+                                    index == currentIndex ||
+                                    index == currentIndex + 1,
+                                totalEpisodes: episodes.length,
+                                seriesId: widget.seriesId,
+                                seriesTitle: widget.title,
+                                bannerUrl: widget.bannerUrl,
+                                onLike: () {
+                                  if (isFyp) {
+                                    ref
+                                        .read(fypEpisodesProvider.notifier)
+                                        .toggleLike(episode.id);
+                                  } else {
+                                    ref
+                                        .read(
+                                          episodesProvider(
+                                            widget.seriesId,
+                                          ).notifier,
+                                        )
+                                        .toggleLike(episode.id);
+                                  }
+                                },
+                                onView: () async {
+                                  final deviceId = await DeviceService()
+                                      .getDeviceId();
+                                  if (isFyp) {
+                                    ref
+                                        .read(fypEpisodesProvider.notifier)
+                                        .recordView(episode.id, deviceId);
+                                    ref
+                                        .read(fypEpisodesProvider.notifier)
+                                        .refreshLikeStatus(episode.id);
+                                  } else {
+                                    ref
+                                        .read(
+                                          episodesProvider(
+                                            widget.seriesId,
+                                          ).notifier,
+                                        )
+                                        .recordView(episode.id, deviceId);
+                                    ref
+                                        .read(
+                                          episodesProvider(
+                                            widget.seriesId,
+                                          ).notifier,
+                                        )
+                                        .refreshLikeStatus(episode.id);
+                                  }
+                                },
+                                pageController: _pageController,
+                              );
                             },
-                            onView: () async {
-                              final deviceId = await DeviceService()
-                                  .getDeviceId();
-                              if (isFyp) {
-                                ref
-                                    .read(fypEpisodesProvider.notifier)
-                                    .recordView(episode.id, deviceId);
-                                ref
-                                    .read(fypEpisodesProvider.notifier)
-                                    .refreshLikeStatus(episode.id);
-                              } else {
-                                ref
-                                    .read(
-                                      episodesProvider(
-                                        widget.seriesId,
-                                      ).notifier,
-                                    )
-                                    .recordView(episode.id, deviceId);
-                                ref
-                                    .read(
-                                      episodesProvider(
-                                        widget.seriesId,
-                                      ).notifier,
-                                    )
-                                    .refreshLikeStatus(episode.id);
-                              }
-                            },
-                            pageController: _pageController,
                           );
                         },
                       );
