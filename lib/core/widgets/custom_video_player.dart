@@ -91,8 +91,12 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     );
 
     if (isFirstInit) {
-      setState(() {
-        _isInitialized = false;
+      Future.microtask(() {
+        if (mounted) {
+          setState(() {
+            _isInitialized = false;
+          });
+        }
       });
     }
 
@@ -364,11 +368,16 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
         debugPrint(
           '🎬 CustomVideoPlayer: AutoPlay changed to ${widget.autoPlay}',
         );
-        if (widget.autoPlay) {
-          _controller!.play();
-        } else {
-          _controller!.pause();
-        }
+        final controller = _controller!;
+        Future.microtask(() {
+          if (mounted) {
+            if (widget.autoPlay) {
+              controller.play();
+            } else {
+              controller.pause();
+            }
+          }
+        });
       }
     } else if (widget.autoPlay != oldWidget.autoPlay &&
         !_isInitialized &&
