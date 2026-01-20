@@ -15,6 +15,7 @@ class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String bannerUrl;
   final bool showBackButton;
   final bool enableAds;
+  final int initialIndex;
 
   const SeriesShortsScreen({
     super.key,
@@ -23,6 +24,7 @@ class SeriesShortsScreen extends ConsumerStatefulWidget {
     required this.bannerUrl,
     this.showBackButton = false,
     this.enableAds = true,
+    this.initialIndex = 0,
   });
 
   @override
@@ -30,7 +32,7 @@ class SeriesShortsScreen extends ConsumerStatefulWidget {
 }
 
 class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
-  final PageController _pageController = PageController();
+  late PageController _pageController;
   final ValueNotifier<int> _currentIndexNotifier = ValueNotifier<int>(0);
 
   // AdMob instances
@@ -41,6 +43,9 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: widget.initialIndex);
+    _currentIndexNotifier.value = widget.initialIndex;
+
     // Force refresh episodes to get new HLS URLs
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (widget.seriesId == 'fyp') {
@@ -463,7 +468,8 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                         GestureDetector(
                           onTap: () => _showEpisodesBottomSheet(
                             widget.pageController,
-                            widget.totalEpisodes,
+                            widget.episode.episodesCount ??
+                                widget.totalEpisodes,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -475,7 +481,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               ),
                               const SizedBox(width: 10),
                               Text(
-                                'Total ${widget.totalEpisodes} Episode',
+                                'Total ${widget.episode.episodesCount ?? widget.totalEpisodes} Episode',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
@@ -564,7 +570,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.network(
-                          widget.bannerUrl,
+                          widget.episode.seriesBannerUrl ?? widget.bannerUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
@@ -584,7 +590,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.seriesTitle,
+                            widget.episode.seriesTitle ?? widget.seriesTitle,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -604,7 +610,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '$totalEpisodes Episodes',
+                              '${widget.episode.episodesCount ?? totalEpisodes} Episodes',
                               style: const TextStyle(
                                 color: AppColors.accent,
                                 fontSize: 12,
@@ -637,17 +643,33 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
                   ),
-                  itemCount: totalEpisodes,
+                  itemCount: widget.episode.episodesCount ?? totalEpisodes,
                   itemBuilder: (context, index) {
                     final isCurrent = widget.episode.episodeNumber == index + 1;
                     return GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
-                        pageController.animateToPage(
-                          index,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
+                        if (widget.seriesId == 'fyp') {
+                          // If in FYP, navigate to the specific drama's shorts screen
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SeriesShortsScreen(
+                                seriesId: widget.episode.seriesId,
+                                title: widget.episode.seriesTitle ?? '',
+                                bannerUrl: widget.episode.seriesBannerUrl ?? '',
+                                showBackButton: true,
+                                initialIndex: index,
+                              ),
+                            ),
+                          );
+                        } else {
+                          pageController.animateToPage(
+                            index,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
                       },
                       child: Container(
                         decoration: BoxDecoration(
