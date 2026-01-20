@@ -125,6 +125,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                             seriesId: widget.seriesId,
                             seriesTitle: widget.title,
                             bannerUrl: widget.bannerUrl,
+                            pageController: _pageController,
                           );
                         },
                       );
@@ -223,6 +224,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
   final String seriesId;
   final String seriesTitle;
   final String bannerUrl;
+  final PageController pageController;
 
   const _ShortVideoItem({
     required this.episode,
@@ -232,6 +234,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
     required this.seriesId,
     required this.seriesTitle,
     required this.bannerUrl,
+    required this.pageController,
   });
 
   @override
@@ -458,7 +461,10 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                     child: Row(
                       children: [
                         GestureDetector(
-                          onTap: _showEpisodesBottomSheet,
+                          onTap: () => _showEpisodesBottomSheet(
+                            widget.pageController,
+                            widget.totalEpisodes,
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -506,7 +512,10 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
     );
   }
 
-  void _showEpisodesBottomSheet() {
+  void _showEpisodesBottomSheet(
+    PageController pageController,
+    int totalEpisodes,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -595,7 +604,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '${widget.totalEpisodes} Episodes',
+                              '$totalEpisodes Episodes',
                               style: const TextStyle(
                                 color: AppColors.accent,
                                 fontSize: 12,
@@ -628,13 +637,17 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
                   ),
-                  itemCount: widget.totalEpisodes,
+                  itemCount: totalEpisodes,
                   itemBuilder: (context, index) {
                     final isCurrent = widget.episode.episodeNumber == index + 1;
                     return GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
-                        // In a real app, we would navigate to that episode
+                        pageController.animateToPage(
+                          index,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
                       },
                       child: Container(
                         decoration: BoxDecoration(
