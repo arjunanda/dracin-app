@@ -54,6 +54,14 @@ class Episode {
   @JsonKey(name: 'is_liked')
   final bool isLiked;
 
+  // Parent Series Metadata (useful for FYP)
+  @JsonKey(name: 'series_title')
+  final String? seriesTitle;
+  @JsonKey(name: 'episodes_count')
+  final int? episodesCount;
+  @JsonKey(name: 'series_banner_url')
+  final String? seriesBannerUrl;
+
   Episode({
     required this.id,
     required this.seriesId,
@@ -68,6 +76,9 @@ class Episode {
     required this.subtitles,
     required this.likeCount,
     required this.isLiked,
+    this.seriesTitle,
+    this.episodesCount,
+    this.seriesBannerUrl,
   });
 
   Episode copyWith({
