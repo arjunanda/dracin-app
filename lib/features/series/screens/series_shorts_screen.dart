@@ -544,39 +544,41 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // 1. Judul Drama (Diatasnya Judul)
+                        Text(
+                          widget.episode.seriesTitle ?? widget.seriesTitle,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 19, // Slightly larger for prominence
+                            letterSpacing: 0.5,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.9),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        // 2. Episode Saja (Dibawahnya)
                         Text(
                           'Episode ${widget.episode.episodeNumber}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.accent,
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                             shadows: [
                               Shadow(
-                                color: Colors.black.withOpacity(0.8),
+                                color: Colors.black,
                                 blurRadius: 4,
-                                offset: const Offset(0, 1),
+                                offset: Offset(0, 1),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.episode.title,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            height: 1.3,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withOpacity(0.8),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
