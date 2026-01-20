@@ -70,6 +70,38 @@ class Episode {
     required this.isLiked,
   });
 
+  Episode copyWith({
+    String? id,
+    String? seriesId,
+    int? episodeNumber,
+    String? title,
+    String? description,
+    String? hlsMasterUrl,
+    String? thumbnailUrl,
+    String? status,
+    int? viewCount,
+    List<Rendition>? renditions,
+    List<EpisodeSubtitle>? subtitles,
+    int? likeCount,
+    bool? isLiked,
+  }) {
+    return Episode(
+      id: id ?? this.id,
+      seriesId: seriesId ?? this.seriesId,
+      episodeNumber: episodeNumber ?? this.episodeNumber,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      hlsMasterUrl: hlsMasterUrl ?? this.hlsMasterUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      status: status ?? this.status,
+      viewCount: viewCount ?? this.viewCount,
+      renditions: renditions ?? this.renditions,
+      subtitles: subtitles ?? this.subtitles,
+      likeCount: likeCount ?? this.likeCount,
+      isLiked: isLiked ?? this.isLiked,
+    );
+  }
+
   factory Episode.fromJson(Map<String, dynamic> json) =>
       _$EpisodeFromJson(json);
   Map<String, dynamic> toJson() => _$EpisodeToJson(this);

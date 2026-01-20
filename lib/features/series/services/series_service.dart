@@ -65,4 +65,20 @@ class SeriesService {
     final response = await _dio.post('series/$id/love', data: {'love': love});
     return ApiResponse<void>.fromJson(response.data, (json) {});
   }
+
+  Future<ApiResponse<void>> likeEpisode(String episodeId) async {
+    final response = await _dio.post('episodes/$episodeId/like');
+    return ApiResponse<void>.fromJson(response.data, (json) {});
+  }
+
+  Future<ApiResponse<void>> recordEpisodeView(
+    String episodeId,
+    String deviceId,
+  ) async {
+    final response = await _dio.post(
+      'episodes/$episodeId/view',
+      data: {'device_id': deviceId},
+    );
+    return ApiResponse<void>.fromJson(response.data, (json) {});
+  }
 }

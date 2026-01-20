@@ -8,6 +8,8 @@ import '../../series/models/episode_model.dart';
 import 'package:video_player/video_player.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../core/localization/language_provider.dart';
+import '../../../core/services/device_service.dart';
+import '../../../core/utils/format_utils.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
@@ -125,6 +127,38 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                             seriesId: widget.seriesId,
                             seriesTitle: widget.title,
                             bannerUrl: widget.bannerUrl,
+                            onLike: () {
+                              if (isFyp) {
+                                ref
+                                    .read(fypEpisodesProvider.notifier)
+                                    .toggleLike(episode.id);
+                              } else {
+                                ref
+                                    .read(
+                                      episodesProvider(
+                                        widget.seriesId,
+                                      ).notifier,
+                                    )
+                                    .toggleLike(episode.id);
+                              }
+                            },
+                            onView: () async {
+                              final deviceId = await DeviceService()
+                                  .getDeviceId();
+                              if (isFyp) {
+                                ref
+                                    .read(fypEpisodesProvider.notifier)
+                                    .recordView(episode.id, deviceId);
+                              } else {
+                                ref
+                                    .read(
+                                      episodesProvider(
+                                        widget.seriesId,
+                                      ).notifier,
+                                    )
+                                    .recordView(episode.id, deviceId);
+                              }
+                            },
                           );
                         },
                       );
@@ -223,6 +257,8 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
   final String seriesId;
   final String seriesTitle;
   final String bannerUrl;
+  final VoidCallback onLike;
+  final VoidCallback onView;
 
   const _ShortVideoItem({
     required this.episode,
@@ -232,6 +268,8 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
     required this.seriesId,
     required this.seriesTitle,
     required this.bannerUrl,
+    required this.onLike,
+    required this.onView,
   });
 
   @override
@@ -241,7 +279,6 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
 class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
     with TickerProviderStateMixin {
   VideoPlayerController? _videoController;
-  bool _isLiked = false;
   late AnimationController _likeController;
   late Animation<double> _likeAnimation;
 
@@ -259,6 +296,18 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
         ]).animate(
           CurvedAnimation(parent: _likeController, curve: Curves.easeInOut),
         );
+
+    if (widget.shouldPlay) {
+      widget.onView();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_ShortVideoItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.shouldPlay && !oldWidget.shouldPlay) {
+      widget.onView();
+    }
   }
 
   @override
@@ -404,17 +453,21 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                   child: Column(
                     children: [
                       _buildSideAction(
-                        icon: _isLiked ? Icons.favorite : Icons.favorite_border,
-                        label: '1.2k',
-                        color: _isLiked
+                        icon: widget.episode.isLiked
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        label: FormatUtils.formatNumber(
+                          widget.episode.likeCount,
+                        ),
+                        color: widget.episode.isLiked
                             ? const Color(0xFFFFD700)
                             : Colors.white,
                         animation: _likeAnimation,
                         onTap: () {
-                          setState(() {
-                            _isLiked = !_isLiked;
+                          widget.onLike();
+                          if (!widget.episode.isLiked) {
                             _likeController.forward(from: 0.0);
-                          });
+                          }
                         },
                       ),
                       const SizedBox(height: 20),

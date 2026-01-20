@@ -31,6 +31,40 @@ class EpisodesNotifier extends StateNotifier<List<Episode>> {
       // Handle error
     }
   }
+
+  Future<void> toggleLike(String episodeId) async {
+    final index = state.indexWhere((e) => e.id == episodeId);
+    if (index == -1) return;
+
+    final episode = state[index];
+    final isLiked = !episode.isLiked;
+    final newLikeCount = isLiked
+        ? episode.likeCount + 1
+        : episode.likeCount - 1;
+
+    // Optimistic UI update
+    final newState = [...state];
+    newState[index] = episode.copyWith(
+      isLiked: isLiked,
+      likeCount: newLikeCount < 0 ? 0 : newLikeCount,
+    );
+    state = newState;
+
+    try {
+      await _service.likeEpisode(episodeId);
+    } catch (e) {
+      // Rollback on error
+      state = [...state]..[index] = episode;
+    }
+  }
+
+  Future<void> recordView(String episodeId, String deviceId) async {
+    try {
+      await _service.recordEpisodeView(episodeId, deviceId);
+    } catch (e) {
+      // Silently fail for views
+    }
+  }
 }
 
 final fypEpisodesProvider =
@@ -52,6 +86,40 @@ class FypEpisodesNotifier extends StateNotifier<List<Episode>> {
       state = response.data ?? [];
     } catch (e) {
       // Handle error
+    }
+  }
+
+  Future<void> toggleLike(String episodeId) async {
+    final index = state.indexWhere((e) => e.id == episodeId);
+    if (index == -1) return;
+
+    final episode = state[index];
+    final isLiked = !episode.isLiked;
+    final newLikeCount = isLiked
+        ? episode.likeCount + 1
+        : episode.likeCount - 1;
+
+    // Optimistic UI update
+    final newState = [...state];
+    newState[index] = episode.copyWith(
+      isLiked: isLiked,
+      likeCount: newLikeCount < 0 ? 0 : newLikeCount,
+    );
+    state = newState;
+
+    try {
+      await _service.likeEpisode(episodeId);
+    } catch (e) {
+      // Rollback on error
+      state = [...state]..[index] = episode;
+    }
+  }
+
+  Future<void> recordView(String episodeId, String deviceId) async {
+    try {
+      await _service.recordEpisodeView(episodeId, deviceId);
+    } catch (e) {
+      // Silently fail for views
     }
   }
 }
