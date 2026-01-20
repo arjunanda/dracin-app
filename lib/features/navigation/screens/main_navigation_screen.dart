@@ -7,6 +7,8 @@ import '../../home/screens/for_you_screen.dart';
 import '../../watchlist/screens/watchlist_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 
+import '../providers/navigation_provider.dart';
+
 class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -16,7 +18,6 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 }
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
-  int _currentIndex = 0;
   Key _fypKey = UniqueKey();
 
   final List<Widget> _screens = [
@@ -26,26 +27,25 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     const ProfileScreen(),
   ];
 
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-      if (index == 1) {
-        _fypKey = UniqueKey();
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final lang = ref.watch(languageProvider);
+    final currentIndex = ref.watch(navigationProvider);
 
     return Scaffold(
-      body: _currentIndex == 1
+      body: currentIndex == 1
           ? ForYouScreen(key: _fypKey)
-          : _screens[_currentIndex],
+          : _screens[currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
+        currentIndex: currentIndex,
+        onTap: (index) {
+          ref.read(navigationProvider.notifier).state = index;
+          if (index == 1) {
+            setState(() {
+              _fypKey = UniqueKey();
+            });
+          }
+        },
         type: BottomNavigationBarType.fixed,
         backgroundColor: Theme.of(context).brightness == Brightness.dark
             ? Colors.black

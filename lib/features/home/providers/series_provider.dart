@@ -30,16 +30,16 @@ class SeriesListState {
     bool? isLoading,
     bool? hasMore,
     int? page,
-    String? currentType,
-    String? categoryId,
+    String? Function()? currentType,
+    String? Function()? categoryId,
   }) {
     return SeriesListState(
       series: series ?? this.series,
       isLoading: isLoading ?? this.isLoading,
       hasMore: hasMore ?? this.hasMore,
       page: page ?? this.page,
-      currentType: currentType ?? this.currentType,
-      categoryId: categoryId ?? this.categoryId,
+      currentType: currentType != null ? currentType() : this.currentType,
+      categoryId: categoryId != null ? categoryId() : this.categoryId,
     );
   }
 }
@@ -65,24 +65,28 @@ class SeriesNotifier extends StateNotifier<SeriesListState> {
   }) async {
     if (state.isLoading) return;
 
-    // If type or category is different, it's a refresh
-    final isTypeChanged = type != null && type != state.currentType;
-    final isCategoryChanged =
-        categoryId != null && categoryId != state.categoryId;
-    final shouldRefresh = refresh || isTypeChanged || isCategoryChanged;
+    // Reset pagination and clear list if filter changes or explicitly refreshing
+    final isFilterChanging = type != null || categoryId != null;
+    final shouldReset = refresh || isFilterChanging;
 
-    if (!shouldRefresh && !state.hasMore) return;
-
-    if (shouldRefresh) {
+    if (shouldReset) {
       state = state.copyWith(
         isLoading: true,
         page: 1,
         series: [],
         hasMore: true,
-        currentType: type ?? (isCategoryChanged ? null : state.currentType),
-        categoryId: categoryId ?? (isTypeChanged ? null : state.categoryId),
+        // If type is coming in, clear categoryId.
+        // If categoryId is coming in, clear type.
+        // If it's a generic refresh, keep what we have.
+        currentType: type != null
+            ? () => type
+            : (categoryId != null ? () => null : null),
+        categoryId: categoryId != null
+            ? () => categoryId
+            : (type != null ? () => null : null),
       );
     } else {
+      if (!state.hasMore) return;
       state = state.copyWith(isLoading: true);
     }
 
@@ -92,6 +96,7 @@ class SeriesNotifier extends StateNotifier<SeriesListState> {
         type: state.currentType,
         categoryId: state.categoryId,
       );
+
       final paginationData = response.data;
 
       if (paginationData != null) {
