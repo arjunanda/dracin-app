@@ -65,7 +65,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     super.initState();
     debugPrint('🎬 CustomVideoPlayer: initState');
 
-    // Set default subtitle to Indonesian if available
+    // Subtitle selection moved to after initialization to save bandwidth
     if (widget.subtitles != null && widget.subtitles!.isNotEmpty) {
       final idIndex = widget.subtitles!.indexWhere(
         (s) =>
@@ -74,12 +74,20 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
       );
       if (idIndex != -1) {
         _selectedSubtitleIndex = idIndex;
-        _loadSubtitle(widget.subtitles![idIndex].url);
       }
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initPlayer();
+      if (widget.autoPlay) {
+        _initPlayer();
+      } else {
+        // Delay background video loading to prioritize active video bandwidth
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted && !_isInitialized) {
+            _initPlayer();
+          }
+        });
+      }
     });
   }
 
@@ -149,6 +157,11 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
 
         if (widget.onControllerInitialized != null) {
           widget.onControllerInitialized!(_controller!);
+        }
+
+        // Load subtitles ONLY after video is ready
+        if (_selectedSubtitleIndex != -1 && widget.subtitles != null) {
+          _loadSubtitle(widget.subtitles![_selectedSubtitleIndex].url);
         }
       }
 
@@ -378,11 +391,19 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     debugPrint('🎬 CustomVideoPlayer: dispose');
     _hideTimer?.cancel();
     _subtitleUpdateTimer?.cancel();
+
     if (_controller != null) {
+      final controllerToDispose = _controller;
+      _controller = null; // Clear reference immediately
+
       if (widget.onControllerWillDispose != null) {
         widget.onControllerWillDispose!();
       }
-      _controller!.dispose();
+
+      // Ensure playback stops before disposal
+      controllerToDispose!.pause().then((_) {
+        controllerToDispose.dispose();
+      });
     }
     super.dispose();
   }
@@ -416,16 +437,31 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
                     ),
                   ),
                 )
-              : Align(
-                  alignment: widget.alignment,
-                  child: Transform.scale(
-                    scale: widget.scale,
+              : ClipRect(
+                  child: Align(
                     alignment: widget.alignment,
-                    child: AspectRatio(
-                      aspectRatio: widget.forceAspectRatio
-                          ? widget.aspectRatio
-                          : _controller!.value.aspectRatio,
-                      child: VideoPlayer(_controller!),
+                    child: Transform.scale(
+                      scale: widget.scale,
+                      alignment: widget.alignment,
+                      child: Stack(
+                        children: [
+                          AspectRatio(
+                            aspectRatio: widget.forceAspectRatio
+                                ? widget.aspectRatio
+                                : (_controller!.value.aspectRatio > 0
+                                      ? _controller!.value.aspectRatio
+                                      : widget.aspectRatio),
+                            child: VideoPlayer(_controller!),
+                          ),
+                          // Pause Shadow - Matches video scale perfectly
+                          if (!_controller!.value.isPlaying)
+                            Positioned.fill(
+                              child: Container(
+                                color: Colors.black.withOpacity(0.3),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -494,9 +530,9 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
                       Colors.black.withOpacity(0.7),
                       Colors.transparent,
                       Colors.transparent,
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withOpacity(0.85),
                     ],
-                    stops: const [0.0, 0.3, 0.7, 1.0],
+                    stops: const [0.0, 0.2, 0.4, 1.0],
                   ),
                 ),
                 child: Stack(

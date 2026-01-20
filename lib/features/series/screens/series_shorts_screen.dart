@@ -118,6 +118,9 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                           return _ShortVideoItem(
                             episode: episode,
                             shouldPlay: index == currentIndex && !_isLoadingAd,
+                            shouldLoad:
+                                index == currentIndex ||
+                                index == currentIndex + 1,
                             totalEpisodes: episodes.length,
                             seriesId: widget.seriesId,
                             seriesTitle: widget.title,
@@ -215,6 +218,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
 class _ShortVideoItem extends ConsumerStatefulWidget {
   final Episode episode;
   final bool shouldPlay;
+  final bool shouldLoad;
   final int totalEpisodes;
   final String seriesId;
   final String seriesTitle;
@@ -223,6 +227,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
   const _ShortVideoItem({
     required this.episode,
     required this.shouldPlay,
+    required this.shouldLoad,
     required this.totalEpisodes,
     required this.seriesId,
     required this.seriesTitle,
@@ -272,41 +277,113 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
             children: [
               Positioned.fill(
                 child: RepaintBoundary(
-                  child: CustomVideoPlayer(
-                    key: ValueKey(widget.episode.id),
-                    sources: [
-                      VideoSource(
-                        label: 'Auto',
-                        url: widget.episode.hlsMasterUrl,
+                  child: !widget.shouldLoad
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        )
+                      : CustomVideoPlayer(
+                          key: ValueKey(widget.episode.id),
+                          sources: [
+                            VideoSource(
+                              label: 'Auto',
+                              url: widget.episode.hlsMasterUrl,
+                            ),
+                            ...widget.episode.renditions.map(
+                              (r) =>
+                                  VideoSource(label: r.resolution, url: r.url),
+                            ),
+                          ],
+                          subtitles: widget.episode.subtitles
+                              .map(
+                                (s) =>
+                                    SubtitleSource(label: s.lang, url: s.file),
+                              )
+                              .toList(),
+                          autoPlay: widget.shouldPlay,
+                          aspectRatio: 9 / 16,
+                          forceAspectRatio: true,
+                          alignment: Alignment.center,
+                          scale: 1.08,
+                          fit: BoxFit.contain,
+                          showDefaultProgressBar: false,
+                          onControllerInitialized: (controller) {
+                            if (mounted) {
+                              setState(() {
+                                _videoController = controller;
+                              });
+                            }
+                          },
+                          onControllerWillDispose: () {
+                            if (mounted) {
+                              setState(() {
+                                _videoController = null;
+                              });
+                            }
+                          },
+                        ),
+                ),
+              ),
+
+              // Episode Info (Absolute over video)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(20, 40, 80, 20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.5),
+                        ],
                       ),
-                      ...widget.episode.renditions.map(
-                        (r) => VideoSource(label: r.resolution, url: r.url),
-                      ),
-                    ],
-                    subtitles: widget.episode.subtitles
-                        .map((s) => SubtitleSource(label: s.lang, url: s.file))
-                        .toList(),
-                    autoPlay: widget.shouldPlay,
-                    aspectRatio: 9 / 16,
-                    forceAspectRatio: true,
-                    alignment: Alignment.topCenter,
-                    scale: 1.10,
-                    fit: BoxFit.contain,
-                    showDefaultProgressBar: false,
-                    onControllerInitialized: (controller) {
-                      if (mounted) {
-                        setState(() {
-                          _videoController = controller;
-                        });
-                      }
-                    },
-                    onControllerWillDispose: () {
-                      if (mounted) {
-                        setState(() {
-                          _videoController = null;
-                        });
-                      }
-                    },
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Episode ${widget.episode.episodeNumber}',
+                          style: TextStyle(
+                            color: AppColors.accent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.8),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.episode.title,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.8),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -347,54 +424,12 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
           ),
         ),
 
-        // Episode Info (Bottom) - Not Positioned
+        // Bottom Bar (Total Episodes & Progress) - Not Positioned
         RepaintBoundary(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Episode ${widget.episode.episodeNumber}',
-                  style: TextStyle(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.8),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  widget.episode.title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    height: 1.3,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.8),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(height: 16),
               // Custom Progress Bar & Total Episodes Container
               Stack(
                 clipBehavior: Clip.none,
