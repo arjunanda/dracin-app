@@ -51,6 +51,12 @@ final seriesProvider = StateNotifierProvider<SeriesNotifier, SeriesListState>((
   return SeriesNotifier(service);
 });
 
+final searchSeriesProvider =
+    StateNotifierProvider.autoDispose<SeriesNotifier, SeriesListState>((ref) {
+      final service = ref.read(seriesServiceProvider);
+      return SeriesNotifier(service);
+    });
+
 class SeriesNotifier extends StateNotifier<SeriesListState> {
   final SeriesService _service;
 
