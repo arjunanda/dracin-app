@@ -30,7 +30,7 @@ class SettingScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.accent),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.accent),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -51,7 +51,7 @@ class SettingScreen extends ConsumerWidget {
                     ? ThemeMode.dark
                     : ThemeMode.light;
               },
-              activeColor: AppColors.accent,
+              activeThumbColor: AppColors.accent,
             ),
             onTap: () {
               ref.read(themeProvider.notifier).state = isDark
@@ -83,7 +83,7 @@ class SettingScreen extends ConsumerWidget {
                 : 'Choose your preferred language',
             trailing: Text(
               lang == AppLanguage.id ? 'Bahasa Indonesia' : 'English',
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.accent,
                 fontWeight: FontWeight.w600,
               ),
@@ -266,7 +266,7 @@ class SettingScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
         title.toUpperCase(),
-        style: TextStyle(
+        style: const TextStyle(
           color: AppColors.accent,
           fontWeight: FontWeight.bold,
           fontSize: 12,

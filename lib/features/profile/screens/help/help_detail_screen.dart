@@ -33,7 +33,7 @@ class HelpDetailScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.accent),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.accent),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -53,11 +53,11 @@ class HelpDetailScreen extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.info_outline, color: AppColors.accent),
+                  const Icon(Icons.info_outline, color: AppColors.accent),
                   const SizedBox(width: 12),
                   Text(
                     lang == AppLanguage.id ? 'Informasi' : 'Information',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.accent,
                       fontWeight: FontWeight.bold,
                       fontSize: 18,

@@ -36,11 +36,18 @@ class AuthService {
     );
   }
 
-  Future<ApiResponse<User>> getMe() async {
-    final response = await _dio.get('me');
-    return ApiResponse<User>.fromJson(
-      response.data,
-      (json) => User.fromJson(json as Map<String, dynamic>),
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String idToken,
+  }) async {
+    final response = await _dio.post(
+      '/api/login/google',
+      data: {'idToken': idToken},
     );
+    return response.data;
+  }
+
+  Future<User> getMe() async {
+    final response = await _dio.get('/api/me');
+    return User.fromJson(response.data);
   }
 }

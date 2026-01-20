@@ -110,7 +110,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       hintStyle: TextStyle(
                         color: Colors.white.withOpacity(0.3),
                       ),
-                      prefixIcon: Icon(Icons.search, color: AppColors.accent),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: AppColors.accent,
+                      ),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(
@@ -187,7 +190,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          ..._searchHistory.map((query) => _buildHistoryItem(query)).toList(),
+          ..._searchHistory.map((query) => _buildHistoryItem(query)),
         ],
       ],
     );

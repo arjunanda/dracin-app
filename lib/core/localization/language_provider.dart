@@ -193,6 +193,14 @@ class AppStrings {
     'share_to': {AppLanguage.id: 'Bagikan ke', AppLanguage.en: 'Share to'},
     'cancel': {AppLanguage.id: 'Batal', AppLanguage.en: 'Cancel'},
     'copy_link': {AppLanguage.id: 'Salin Tautan', AppLanguage.en: 'Copy Link'},
+    'login_success': {
+      AppLanguage.id: 'Berhasil masuk!',
+      AppLanguage.en: 'Login successful!',
+    },
+    'login_failed': {
+      AppLanguage.id: 'Gagal masuk. Silakan coba lagi.',
+      AppLanguage.en: 'Login failed. Please try again.',
+    },
   };
 
   static String get(String key, AppLanguage lang) {
