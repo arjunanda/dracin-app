@@ -14,7 +14,19 @@ final apiClientProvider = Provider<Dio>((ref) {
   );
 
   final storage = SecureStorage();
-  dio.interceptors.add(AuthInterceptor(storage));
+
+  // Create interceptor with unauthorized callback
+  dio.interceptors.add(
+    AuthInterceptor(
+      storage,
+      onUnauthorized: () {
+        // Just clear storage. The next time the app tries to use the token,
+        // it will realize it's gone.
+        storage.deleteToken();
+      },
+    ),
+  );
+
   dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
 
   return dio;

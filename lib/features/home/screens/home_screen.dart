@@ -9,7 +9,6 @@ import '../../series/screens/series_shorts_screen.dart';
 import '../providers/series_provider.dart';
 import '../providers/category_provider.dart';
 import 'search_screen.dart';
-import '../models/series_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -124,7 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                 ),
               ),
-              ..._buildSelectedSection(context, state.series),
+              ..._buildSelectedSection(context, state, lang),
             ],
           ),
         ],
@@ -155,9 +154,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               return GestureDetector(
                 onTap: () {
+                  if (_selectedCategoryIndex == index) return;
+
                   setState(() {
                     _selectedCategoryIndex = index;
                   });
+
+                  // Trigger API call based on selection
+                  if (index < staticCategories.length) {
+                    // It's a static type (Trending, Latest, etc)
+                    String type = 'popular';
+                    if (index == 1) type = 'newest';
+                    if (index == 2) type = 'recommended';
+
+                    ref
+                        .read(seriesProvider.notifier)
+                        .getSeries(refresh: true, type: type);
+                  } else {
+                    // It's a dynamic category from API
+                    final categoryIndex = index - staticCategories.length;
+                    final categoryId = categories[categoryIndex].id;
+
+                    ref
+                        .read(seriesProvider.notifier)
+                        .getSeries(refresh: true, categoryId: categoryId);
+                  }
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
@@ -218,9 +239,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   List<Widget> _buildSelectedSection(
     BuildContext context,
-    List<Series> series,
+    SeriesListState state,
+    AppLanguage lang,
   ) {
-    if (series.isEmpty) {
+    if (state.isLoading && state.series.isEmpty) {
       return [
         const SliverToBoxAdapter(
           child: SizedBox(
@@ -230,6 +252,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ];
     }
+
+    if (!state.isLoading && state.series.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.movie_filter_rounded,
+                  size: 80,
+                  color: Colors.grey.withOpacity(0.3),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  AppStrings.get('no_content_found', lang),
+                  style: TextStyle(
+                    color: Colors.grey.withOpacity(0.8),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ];
+    }
+
+    final series = state.series;
 
     return [
       SliverPadding(

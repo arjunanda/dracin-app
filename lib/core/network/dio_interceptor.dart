@@ -3,8 +3,9 @@ import '../utils/secure_storage.dart';
 
 class AuthInterceptor extends Interceptor {
   final SecureStorage _storage;
+  final VoidCallback? onUnauthorized;
 
-  AuthInterceptor(this._storage);
+  AuthInterceptor(this._storage, {this.onUnauthorized});
 
   @override
   void onRequest(
@@ -21,9 +22,11 @@ class AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     if (err.response?.statusCode == 401) {
-      // Handle logout or token refresh if needed
       _storage.deleteToken();
+      onUnauthorized?.call();
     }
     return handler.next(err);
   }
 }
+
+typedef VoidCallback = void Function();

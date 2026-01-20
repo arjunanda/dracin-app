@@ -6,52 +6,19 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../home/models/series_model.dart';
 import '../../series/screens/series_shorts_screen.dart';
+import '../providers/watchlist_provider.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../auth/screens/login_screen.dart';
+
+import '../../navigation/providers/navigation_provider.dart';
 
 class WatchlistScreen extends ConsumerWidget {
   const WatchlistScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Dummy Watchlist Data
-    final List<Series> watchlist = [
-      Series(
-        id: '1',
-        title: 'The Silent Sea',
-        description:
-            'A space mission to the moon to retrieve samples from an abandoned research station.',
-        bannerUrl: 'https://picsum.photos/seed/series_1/800/1200',
-        episodesCount: 8,
-        isLoved: true,
-      ),
-      Series(
-        id: '2',
-        title: 'All of Us Are Dead',
-        description:
-            'A high school becomes ground zero for a zombie virus outbreak.',
-        bannerUrl: 'https://picsum.photos/seed/series_2/800/1200',
-        episodesCount: 12,
-        isLoved: true,
-      ),
-      Series(
-        id: '3',
-        title: 'Squid Game',
-        description:
-            'Hundreds of cash-strapped players accept a strange invitation to compete in children\'s games.',
-        bannerUrl: 'https://picsum.photos/seed/series_3/800/1200',
-        episodesCount: 9,
-        isLoved: true,
-      ),
-      Series(
-        id: '4',
-        title: 'Kingdom',
-        description:
-            'While strange rumors about their ill King grip a kingdom, the crown prince becomes their only hope against a mysterious plague.',
-        bannerUrl: 'https://picsum.photos/seed/series_4/800/1200',
-        episodesCount: 12,
-        isLoved: true,
-      ),
-    ];
-
+    final authState = ref.watch(authProvider);
+    final watchlistAsync = ref.watch(watchlistProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = ref.watch(languageProvider);
     final primaryTextColor = isDark ? Colors.white : Colors.black87;
@@ -63,118 +30,217 @@ class WatchlistScreen extends ConsumerWidget {
           : AppColors.lightBackground,
       body: Stack(
         children: [
-          // Background Blobs for Depth
+          // Background Blobs
           if (isDark) ...[
             Positioned(
               top: -100,
               right: -100,
               child: _buildBlurBlob(AppColors.primary.withOpacity(0.1), 300),
             ),
-            Positioned(
-              bottom: 100,
-              left: -100,
-              child: _buildBlurBlob(AppColors.accent.withOpacity(0.05), 250),
-            ),
           ],
 
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // Premium Header
-              SliverAppBar(
-                expandedHeight: 180,
-                floating: false,
-                pinned: true,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  centerTitle: false,
-                  titlePadding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                  title: Text(
-                    AppStrings.get('my_watchlist', lang),
-                    style: TextStyle(
-                      fontSize: 28,
-                      color: isDark ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -1.0,
-                    ),
-                  ),
-                  background: Container(
-                    padding: const EdgeInsets.only(left: 24, top: 85),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.primary.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Text(
-                            AppStrings.get(
-                              'watchlist_subtitle',
-                              lang,
-                            ).replaceAll(
-                              '{count}',
-                              watchlist.length.toString(),
-                            ),
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
+          if (authState.status != AuthStatus.authenticated)
+            _buildLoginPrompt(
+              context,
+              lang,
+              primaryTextColor,
+              secondaryTextColor,
+            )
+          else
+            watchlistAsync.when(
+              data: (watchlist) => CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  // Premium Header
+                  SliverAppBar(
+                    expandedHeight: 180,
+                    floating: false,
+                    pinned: true,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    flexibleSpace: FlexibleSpaceBar(
+                      centerTitle: false,
+                      titlePadding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      title: Text(
+                        AppStrings.get('my_watchlist', lang),
+                        style: TextStyle(
+                          fontSize: 28,
+                          color: isDark ? Colors.white : Colors.black,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1.0,
                         ),
-                      ],
+                      ),
+                      background: Container(
+                        padding: const EdgeInsets.only(left: 24, top: 85),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Text(
+                                AppStrings.get(
+                                  'watchlist_subtitle',
+                                  lang,
+                                ).replaceAll(
+                                  '{count}',
+                                  watchlist.length.toString(),
+                                ),
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              CupertinoSliverRefreshControl(
-                onRefresh: () async {
-                  await Future.delayed(const Duration(seconds: 1));
-                },
-              ),
-
-              // Watchlist Content
-              if (watchlist.isEmpty)
-                SliverFillRemaining(
-                  child: _buildEmptyState(
-                    context,
-                    lang,
-                    primaryTextColor,
-                    secondaryTextColor,
+                  CupertinoSliverRefreshControl(
+                    onRefresh: () async {
+                      await ref
+                          .read(watchlistProvider.notifier)
+                          .loadWatchlist();
+                    },
                   ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => _buildWatchlistCard(
+
+                  // Watchlist Content
+                  if (watchlist.isEmpty)
+                    SliverFillRemaining(
+                      child: _buildEmptyState(
                         context,
-                        watchlist[index],
+                        ref,
+                        lang,
                         primaryTextColor,
                         secondaryTextColor,
-                        isDark,
                       ),
-                      childCount: watchlist.length,
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => _buildWatchlistCard(
+                            context,
+                            watchlist[index],
+                            primaryTextColor,
+                            secondaryTextColor,
+                            isDark,
+                          ),
+                          childCount: watchlist.length,
+                        ),
+                      ),
                     ),
+                ],
+              ),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+              error: (error, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Error: $error',
+                      style: TextStyle(color: primaryTextColor),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () =>
+                          ref.read(watchlistProvider.notifier).loadWatchlist(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoginPrompt(
+    BuildContext context,
+    AppLanguage lang,
+    Color primaryTextColor,
+    Color secondaryTextColor,
+  ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.lock_outline_rounded,
+                size: 80,
+                color: AppColors.primary.withOpacity(0.2),
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              AppStrings.get('login_required', lang),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: primaryTextColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              AppStrings.get('watchlist_login_msg', lang),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: secondaryTextColor, fontSize: 16),
+            ),
+            const SizedBox(height: 48),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-            ],
-          ),
-        ],
+                child: Text(
+                  AppStrings.get('login', lang),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -193,6 +259,7 @@ class WatchlistScreen extends ConsumerWidget {
 
   Widget _buildEmptyState(
     BuildContext context,
+    WidgetRef ref,
     AppLanguage lang,
     Color primaryTextColor,
     Color secondaryTextColor,
@@ -249,7 +316,9 @@ class WatchlistScreen extends ConsumerWidget {
               ],
             ),
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                ref.read(navigationProvider.notifier).state = 0;
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

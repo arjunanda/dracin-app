@@ -41,6 +41,18 @@ class AppStrings {
       AppLanguage.en: 'My Watchlist',
     },
     'login': {AppLanguage.id: 'Masuk', AppLanguage.en: 'Login'},
+    'no_content_found': {
+      AppLanguage.id: 'Konten tidak ditemukan',
+      AppLanguage.en: 'No content found',
+    },
+    'login_required': {
+      AppLanguage.id: 'Perlu Masuk',
+      AppLanguage.en: 'Login Required',
+    },
+    'watchlist_login_msg': {
+      AppLanguage.id: 'Silakan masuk untuk melihat daftar tontonan Anda.',
+      AppLanguage.en: 'Please login to see your personalized watchlist.',
+    },
     'help': {AppLanguage.id: 'Bantuan', AppLanguage.en: 'Help'},
     'watchlist_subtitle': {
       AppLanguage.id: 'Anda punya {count} drama untuk ditonton',
