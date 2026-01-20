@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:dio/dio.dart';
-import '../theme/app_colors.dart';
+import '../../../core/theme/app_colors.dart';
 
 class VideoSource {
   final String label;
