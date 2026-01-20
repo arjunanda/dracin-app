@@ -78,16 +78,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.autoPlay) {
-        _initPlayer();
-      } else {
-        // Delay background video loading to prioritize active video bandwidth
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted && !_isInitialized) {
-            _initPlayer();
-          }
-        });
-      }
+      _initPlayer();
     });
   }
 
@@ -373,16 +364,17 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
         debugPrint(
           '🎬 CustomVideoPlayer: AutoPlay changed to ${widget.autoPlay}',
         );
-        Future.microtask(() {
-          if (_controller != null && _isInitialized) {
-            if (widget.autoPlay) {
-              _controller!.play();
-            } else {
-              _controller!.pause();
-            }
-          }
-        });
+        if (widget.autoPlay) {
+          _controller!.play();
+        } else {
+          _controller!.pause();
+        }
       }
+    } else if (widget.autoPlay != oldWidget.autoPlay &&
+        !_isInitialized &&
+        !_isSwitchingQuality) {
+      // If autoPlay changes while not initialized and not currently initializing, trigger init
+      _initPlayer();
     }
   }
 
@@ -394,16 +386,13 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
 
     if (_controller != null) {
       final controllerToDispose = _controller;
-      _controller = null; // Clear reference immediately
+      _controller = null; // Clear reference
 
       if (widget.onControllerWillDispose != null) {
         widget.onControllerWillDispose!();
       }
 
-      // Ensure playback stops before disposal
-      controllerToDispose!.pause().then((_) {
-        controllerToDispose.dispose();
-      });
+      controllerToDispose!.dispose();
     }
     super.dispose();
   }

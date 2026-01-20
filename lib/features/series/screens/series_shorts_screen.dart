@@ -310,15 +310,23 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                           showDefaultProgressBar: false,
                           onControllerInitialized: (controller) {
                             if (mounted) {
-                              setState(() {
-                                _videoController = controller;
+                              Future.microtask(() {
+                                if (mounted) {
+                                  setState(() {
+                                    _videoController = controller;
+                                  });
+                                }
                               });
                             }
                           },
                           onControllerWillDispose: () {
                             if (mounted) {
-                              setState(() {
-                                _videoController = null;
+                              Future.microtask(() {
+                                if (mounted) {
+                                  setState(() {
+                                    _videoController = null;
+                                  });
+                                }
                               });
                             }
                           },
