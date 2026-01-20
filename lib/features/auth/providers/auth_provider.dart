@@ -37,7 +37,11 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
   final SecureStorage _storage;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId:
+        '917313223480-ee7mo3q4nn5goj8k13ldfrn4udorgbp5.apps.googleusercontent.com',
+    scopes: ['email', 'profile', 'openid'],
+  );
 
   AuthNotifier(this._authService, this._storage) : super(AuthState()) {
     checkAuth();
@@ -62,17 +66,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signInWithGoogle() async {
     state = state.copyWith(status: AuthStatus.loading);
     try {
+      print('AUTH_DEBUG: Starting signIn()');
+      // Force sign out first to ensure a fresh account selection pop-up
+      await _googleSignIn.signOut();
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
       if (googleUser == null) {
+        print(
+          'AUTH_DEBUG: googleUser is NULL (User cancelled or configuration error)',
+        );
         state = state.copyWith(status: AuthStatus.unauthenticated);
         return;
       }
 
+      print('AUTH_DEBUG: User authenticated: ${googleUser.email}');
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
       final String? idToken = googleAuth.idToken;
 
       if (idToken == null) {
+        print('AUTH_DEBUG: idToken is NULL');
         state = state.copyWith(
           status: AuthStatus.unauthenticated,
           error: 'Could not get ID Token from Google',
@@ -80,15 +93,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return;
       }
 
+      print('AUTH_DEBUG: Sending idToken to backend: auth/google/login');
       final apiRes = await _authService.loginWithGoogle(idToken: idToken);
+      print('AUTH_DEBUG: Backend Response: ${apiRes.data}');
+
       final token = apiRes.data?['token'];
       if (token == null) {
+        print('AUTH_DEBUG: App token is NULL in backend response');
         throw Exception(apiRes.message);
       }
+
       await _storage.saveToken(token);
       final user = await _authService.getMe();
       state = state.copyWith(status: AuthStatus.authenticated, user: user);
+      print('AUTH_DEBUG: Login Successful');
     } catch (e) {
+      print('AUTH_DEBUG ERROR: $e');
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
         error: e.toString(),
