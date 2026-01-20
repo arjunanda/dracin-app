@@ -1,4 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage());
 
 class SecureStorage {
   static const _tokenKey = 'auth_token';

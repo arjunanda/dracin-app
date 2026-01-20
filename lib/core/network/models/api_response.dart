@@ -8,17 +8,12 @@ class ApiResponse<T> {
   final String message;
   final T? data;
 
-  ApiResponse({
-    required this.success,
-    required this.message,
-    this.data,
-  });
+  ApiResponse({this.success = true, this.message = '', this.data});
 
   factory ApiResponse.fromJson(
     Map<String, dynamic> json,
     T Function(Object? json) fromJsonT,
-  ) =>
-      _$ApiResponseFromJson(json, fromJsonT);
+  ) => _$ApiResponseFromJson(json, fromJsonT);
 
   Map<String, dynamic> toJson(Object? Function(T value) toJsonT) =>
       _$ApiResponseToJson(this, toJsonT);
@@ -42,8 +37,7 @@ class PaginationData<T> {
   factory PaginationData.fromJson(
     Map<String, dynamic> json,
     T Function(Object? json) fromJsonT,
-  ) =>
-      _$PaginationDataFromJson(json, fromJsonT);
+  ) => _$PaginationDataFromJson(json, fromJsonT);
 
   Map<String, dynamic> toJson(Object? Function(T value) toJsonT) =>
       _$PaginationDataToJson(this, toJsonT);

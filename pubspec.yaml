@@ -44,6 +44,7 @@ dependencies:
   video_player: ^2.10.1
   font_awesome_flutter: ^10.7.0
   subtitle_wrapper_package: ^2.0.2
+  device_info_plus: ^12.3.0
 
 dev_dependencies:
   flutter_test:
