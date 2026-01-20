@@ -25,7 +25,7 @@ class SeriesService {
       },
     );
     return ApiResponse<PaginationData<Series>>.fromJson(
-      response.data,
+      response.data ?? {},
       (json) => PaginationData<Series>.fromJson(
         json as Map<String, dynamic>,
         (itemJson) => Series.fromJson(itemJson as Map<String, dynamic>),
@@ -36,7 +36,7 @@ class SeriesService {
   Future<ApiResponse<Series>> getSeriesDetail(String id) async {
     final response = await _dio.get('series/$id');
     return ApiResponse<Series>.fromJson(
-      response.data,
+      response.data ?? {},
       (json) => Series.fromJson(json as Map<String, dynamic>),
     );
   }
@@ -44,7 +44,7 @@ class SeriesService {
   Future<ApiResponse<List<Episode>>> getEpisodes(String seriesId) async {
     final response = await _dio.get('series/$seriesId/episodes');
     return ApiResponse<List<Episode>>.fromJson(
-      response.data,
+      response.data ?? [],
       (json) => (json as List)
           .map((item) => Episode.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -54,7 +54,7 @@ class SeriesService {
   Future<ApiResponse<List<Episode>>> getFypEpisodes() async {
     final response = await _dio.get('fyp');
     return ApiResponse<List<Episode>>.fromJson(
-      response.data,
+      response.data ?? [],
       (json) => (json as List)
           .map((item) => Episode.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -63,12 +63,36 @@ class SeriesService {
 
   Future<ApiResponse<void>> toggleLove(String id, bool love) async {
     final response = await _dio.post('series/$id/love', data: {'love': love});
-    return ApiResponse<void>.fromJson(response.data, (json) {});
+    return ApiResponse<void>.fromJson(response.data ?? {}, (json) {});
   }
 
-  Future<ApiResponse<void>> likeEpisode(String episodeId) async {
-    final response = await _dio.post('episodes/$episodeId/like');
-    return ApiResponse<void>.fromJson(response.data, (json) {});
+  Future<ApiResponse<void>> likeEpisode(
+    String episodeId, [
+    String? token,
+  ]) async {
+    final response = await _dio.post(
+      'episodes/$episodeId/like',
+      options: token != null
+          ? Options(headers: {'Authorization': 'Bearer $token'})
+          : null,
+    );
+    return ApiResponse<void>.fromJson(response.data ?? {}, (json) {});
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> getEpisodeLikeStatus(
+    String episodeId, [
+    String? token,
+  ]) async {
+    final response = await _dio.get(
+      'episodes/$episodeId/likes',
+      options: token != null
+          ? Options(headers: {'Authorization': 'Bearer $token'})
+          : null,
+    );
+    return ApiResponse<Map<String, dynamic>>.fromJson(
+      response.data ?? {},
+      (json) => json as Map<String, dynamic>,
+    );
   }
 
   Future<ApiResponse<void>> recordEpisodeView(
@@ -79,6 +103,6 @@ class SeriesService {
       'episodes/$episodeId/view',
       data: {'device_id': deviceId},
     );
-    return ApiResponse<void>.fromJson(response.data, (json) {});
+    return ApiResponse<void>.fromJson(response.data ?? {}, (json) {});
   }
 }

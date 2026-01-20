@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
@@ -10,6 +11,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/utils/format_utils.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../auth/screens/login_screen.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
@@ -118,6 +121,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                         valueListenable: _currentIndexNotifier,
                         builder: (context, currentIndex, _) {
                           return _ShortVideoItem(
+                            key: ValueKey(episode.id),
                             episode: episode,
                             shouldPlay: index == currentIndex && !_isLoadingAd,
                             shouldLoad:
@@ -149,6 +153,9 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                                 ref
                                     .read(fypEpisodesProvider.notifier)
                                     .recordView(episode.id, deviceId);
+                                ref
+                                    .read(fypEpisodesProvider.notifier)
+                                    .refreshLikeStatus(episode.id);
                               } else {
                                 ref
                                     .read(
@@ -157,6 +164,13 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                                       ).notifier,
                                     )
                                     .recordView(episode.id, deviceId);
+                                ref
+                                    .read(
+                                      episodesProvider(
+                                        widget.seriesId,
+                                      ).notifier,
+                                    )
+                                    .refreshLikeStatus(episode.id);
                               }
                             },
                           );
@@ -261,6 +275,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
   final VoidCallback onView;
 
   const _ShortVideoItem({
+    super.key,
     required this.episode,
     required this.shouldPlay,
     required this.shouldLoad,
@@ -281,6 +296,12 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
   VideoPlayerController? _videoController;
   late AnimationController _likeController;
   late Animation<double> _likeAnimation;
+
+  // Local state to prevent blinking
+  bool? _localIsLiked;
+  int? _localLikeCount;
+  bool _isLockingLike = false;
+  Timer? _lockTimer;
 
   @override
   void initState() {
@@ -308,13 +329,123 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
     if (widget.shouldPlay && !oldWidget.shouldPlay) {
       widget.onView();
     }
+
+    // If the episode changed, reset local state
+    if (widget.episode.id != oldWidget.episode.id) {
+      _localIsLiked = null;
+      _localLikeCount = null;
+      _isLockingLike = false;
+      _lockTimer?.cancel();
+    }
   }
 
   @override
   void dispose() {
     _likeController.dispose();
+    _lockTimer?.cancel();
     super.dispose();
   }
+
+  void _handleLike() {
+    final authState = ref.read(authProvider);
+    print('AUTH_DEBUG: Like clicked. Current Status: ${authState.status}');
+
+    if (authState.status != AuthStatus.authenticated) {
+      print('AUTH_DEBUG: Not authenticated, showing popup');
+      _showLoginRequiredDialog();
+      return;
+    }
+
+    final currentIsLiked = _localIsLiked ?? widget.episode.isLiked;
+    final currentCount = _localLikeCount ?? widget.episode.likeCount;
+
+    setState(() {
+      _localIsLiked = !currentIsLiked;
+      _localLikeCount = _localIsLiked! ? currentCount + 1 : currentCount - 1;
+      if (_localLikeCount! < 0) _localLikeCount = 0;
+      _isLockingLike = true;
+    });
+
+    // Trigger animation
+    if (_localIsLiked!) {
+      _likeController.forward(from: 0.0);
+    }
+
+    // Call provider
+    widget.onLike();
+
+    // Lock local state for 3 seconds to ignore background refreshes
+    _lockTimer?.cancel();
+    _lockTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _isLockingLike = false;
+        });
+      }
+    });
+  }
+
+  void _showLoginRequiredDialog() {
+    final lang = ref.read(languageProvider);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.darkSurface
+            : Colors.white,
+        title: Text(
+          AppStrings.get('login_required', lang),
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : Colors.black,
+          ),
+        ),
+        content: Text(
+          AppStrings.get('watchlist_login_msg', lang),
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white70
+                : Colors.black87,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              AppStrings.get('cancel', lang),
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            child: Text(AppStrings.get('login', lang)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool get _isLiked => _isLockingLike
+      ? (_localIsLiked ?? widget.episode.isLiked)
+      : widget.episode.isLiked;
+
+  int get _likeCount => _isLockingLike
+      ? (_localLikeCount ?? widget.episode.likeCount)
+      : widget.episode.likeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -453,22 +584,13 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                   child: Column(
                     children: [
                       _buildSideAction(
-                        icon: widget.episode.isLiked
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        label: FormatUtils.formatNumber(
-                          widget.episode.likeCount,
-                        ),
-                        color: widget.episode.isLiked
+                        icon: _isLiked ? Icons.favorite : Icons.favorite_border,
+                        label: FormatUtils.formatNumber(_likeCount),
+                        color: _isLiked
                             ? const Color(0xFFFFD700)
                             : Colors.white,
                         animation: _likeAnimation,
-                        onTap: () {
-                          widget.onLike();
-                          if (!widget.episode.isLiked) {
-                            _likeController.forward(from: 0.0);
-                          }
-                        },
+                        onTap: _handleLike,
                       ),
                       const SizedBox(height: 20),
                       _buildSideAction(
