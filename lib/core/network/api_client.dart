@@ -6,7 +6,7 @@ import '../utils/secure_storage.dart';
 final apiClientProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
-      baseUrl: 'http://10.0.2.2:8080/',
+      baseUrl: 'http://217.217.255.44:8080/api/',
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       contentType: 'application/json',
