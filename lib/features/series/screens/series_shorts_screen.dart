@@ -13,6 +13,7 @@ import '../../../core/services/device_service.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
+import '../../../core/utils/share_utils.dart';
 import '../../home/providers/series_provider.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
@@ -104,6 +105,13 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                     itemCount: episodes.length,
                     onPageChanged: (index) async {
                       _adManager.recordScroll(index);
+
+                      // Load more logic for FYP
+                      if (isFyp && index >= episodes.length - 2) {
+                        ref
+                            .read(fypEpisodesProvider.notifier)
+                            .loadMoreFypEpisodes();
+                      }
 
                       // Check if we should show an ad (cumulative scrolls)
                       if (widget.enableAds &&
@@ -537,7 +545,6 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                           aspectRatio: 9 / 16,
                           forceAspectRatio: true,
                           alignment: Alignment.center,
-                          scale: 1.08,
                           fit: BoxFit.contain,
                           showDefaultProgressBar: false,
                           onControllerInitialized: (controller) {
@@ -562,6 +569,16 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               });
                             }
                           },
+                          scale: () {
+                            final size = MediaQuery.of(context).size;
+                            final screenRatio = size.width / size.height;
+                            const videoRatio = 9 / 16;
+                            if (screenRatio < videoRatio) {
+                              // Screen is taller than 9:16 (modern phones)
+                              return (videoRatio / screenRatio) * 1.0;
+                            }
+                            return 1.0; // Slight zoom for standard screens
+                          }(),
                         ),
                 ),
               ),
@@ -590,7 +607,9 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                       children: [
                         // 1. Judul Drama (Diatasnya Judul)
                         Text(
-                          widget.episode.seriesTitle ?? widget.seriesTitle,
+                          widget.episode.seriesName ??
+                              widget.episode.seriesTitle ??
+                              widget.seriesTitle,
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -716,7 +735,11 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               ),
                               const SizedBox(width: 10),
                               Text(
-                                'Total ${widget.episode.episodesCount ?? widget.totalEpisodes} Episode',
+                                (widget.episode.episodesCount ??
+                                            widget.totalEpisodes) >
+                                        0
+                                    ? 'Total ${widget.episode.episodesCount ?? widget.totalEpisodes} Episode'
+                                    : 'Episode ${widget.episode.episodeNumber}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
@@ -845,7 +868,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '${widget.episode.episodesCount ?? totalEpisodes} Episodes',
+                              '${widget.episode.episodesCount ?? widget.totalEpisodes} Episodes',
                               style: const TextStyle(
                                 color: AppColors.accent,
                                 fontSize: 12,
@@ -878,7 +901,8 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
                   ),
-                  itemCount: widget.episode.episodesCount ?? totalEpisodes,
+                  itemCount:
+                      widget.episode.episodesCount ?? widget.totalEpisodes,
                   itemBuilder: (context, index) {
                     final isCurrent = widget.episode.episodeNumber == index + 1;
                     return GestureDetector(
@@ -891,8 +915,12 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                             MaterialPageRoute(
                               builder: (_) => SeriesShortsScreen(
                                 seriesId: widget.episode.seriesId,
-                                title: widget.episode.seriesTitle ?? '',
-                                bannerUrl: widget.episode.seriesBannerUrl ?? '',
+                                title:
+                                    widget.episode.seriesTitle ??
+                                    widget.seriesTitle,
+                                bannerUrl:
+                                    widget.episode.seriesBannerUrl ??
+                                    widget.bannerUrl,
                                 showBackButton: true,
                                 initialIndex: index,
                               ),
@@ -1048,31 +1076,104 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                       icon: FontAwesomeIcons.whatsapp,
                       label: 'WhatsApp',
                       color: const Color(0xFF25D366),
+                      onTap: () {
+                        Navigator.pop(context);
+                        final message = AppStrings.get('share_message', lang)
+                            .replaceAll(
+                              '{title}',
+                              widget.episode.effectiveSeriesTitle,
+                            )
+                            .replaceAll(
+                              '{episode}',
+                              widget.episode.episodeNumber.toString(),
+                            );
+                        ShareUtils.shareToWhatsApp(
+                          '$message https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                     _buildShareOption(
                       icon: FontAwesomeIcons.instagram,
                       label: 'Instagram',
                       color: const Color(0xFFE4405F),
+                      onTap: () {
+                        Navigator.pop(context);
+                        final message = AppStrings.get('share_message', lang)
+                            .replaceAll(
+                              '{title}',
+                              widget.episode.effectiveSeriesTitle,
+                            )
+                            .replaceAll(
+                              '{episode}',
+                              widget.episode.episodeNumber.toString(),
+                            );
+                        ShareUtils.shareText(
+                          '$message https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                     _buildShareOption(
                       icon: FontAwesomeIcons.telegram,
                       label: 'Telegram',
                       color: const Color(0xFF0088CC),
+                      onTap: () {
+                        Navigator.pop(context);
+                        final message = AppStrings.get('share_message', lang)
+                            .replaceAll(
+                              '{title}',
+                              widget.episode.effectiveSeriesTitle,
+                            )
+                            .replaceAll(
+                              '{episode}',
+                              widget.episode.episodeNumber.toString(),
+                            );
+                        ShareUtils.shareToTelegram(
+                          '$message https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                     _buildShareOption(
                       icon: FontAwesomeIcons.facebook,
                       label: 'Facebook',
                       color: const Color(0xFF1877F2),
+                      onTap: () {
+                        Navigator.pop(context);
+                        ShareUtils.shareToFacebook(
+                          'https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                     _buildShareOption(
                       icon: FontAwesomeIcons.link,
                       label: AppStrings.get('copy_link', lang),
                       color: Colors.grey,
+                      onTap: () {
+                        Navigator.pop(context);
+                        ShareUtils.copyToClipboard(
+                          context,
+                          'https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                     _buildShareOption(
                       icon: FontAwesomeIcons.ellipsis,
                       label: 'More',
                       color: AppColors.accent,
+                      onTap: () {
+                        Navigator.pop(context);
+                        final message = AppStrings.get('share_message', lang)
+                            .replaceAll(
+                              '{title}',
+                              widget.episode.effectiveSeriesTitle,
+                            )
+                            .replaceAll(
+                              '{episode}',
+                              widget.episode.episodeNumber.toString(),
+                            );
+                        ShareUtils.shareText(
+                          '$message https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -1112,31 +1213,35 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
     required IconData icon,
     required String label,
     required Color color,
+    required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.only(right: 24),
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 24),
+        child: Column(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 30),
             ),
-            child: Icon(icon, color: color, size: 30),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: isDark ? Colors.white70 : Colors.black87,
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

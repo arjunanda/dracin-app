@@ -213,6 +213,14 @@ class AppStrings {
       AppLanguage.id: 'Gagal masuk. Silakan coba lagi.',
       AppLanguage.en: 'Login failed. Please try again.',
     },
+    'link_copied': {
+      AppLanguage.id: 'Tautan berhasil disalin!',
+      AppLanguage.en: 'Link copied to clipboard!',
+    },
+    'share_message': {
+      AppLanguage.id: 'Tonton {title} - Episode {episode} di Dracin App!',
+      AppLanguage.en: 'Watch {title} - Episode {episode} on Dracin App!',
+    },
   };
 
   static String get(String key, AppLanguage lang) {
