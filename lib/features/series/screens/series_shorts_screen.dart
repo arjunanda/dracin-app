@@ -13,6 +13,7 @@ import '../../../core/services/device_service.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
+import '../../../core/utils/share_utils.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
@@ -510,7 +511,6 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                           aspectRatio: 9 / 16,
                           forceAspectRatio: true,
                           alignment: Alignment.center,
-                          scale: 1.08,
                           fit: BoxFit.contain,
                           showDefaultProgressBar: false,
                           onControllerInitialized: (controller) {
@@ -535,6 +535,16 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               });
                             }
                           },
+                          scale: () {
+                            final size = MediaQuery.of(context).size;
+                            final screenRatio = size.width / size.height;
+                            const videoRatio = 9 / 16;
+                            if (screenRatio < videoRatio) {
+                              // Screen is taller than 9:16 (modern phones)
+                              return (videoRatio / screenRatio) * 1.0;
+                            }
+                            return 0.7; // Slight zoom for standard screens
+                          }(),
                         ),
                 ),
               ),
@@ -1012,31 +1022,104 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                       icon: FontAwesomeIcons.whatsapp,
                       label: 'WhatsApp',
                       color: const Color(0xFF25D366),
+                      onTap: () {
+                        Navigator.pop(context);
+                        final message = AppStrings.get('share_message', lang)
+                            .replaceAll(
+                              '{title}',
+                              widget.episode.effectiveSeriesTitle,
+                            )
+                            .replaceAll(
+                              '{episode}',
+                              widget.episode.episodeNumber.toString(),
+                            );
+                        ShareUtils.shareToWhatsApp(
+                          '$message https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                     _buildShareOption(
                       icon: FontAwesomeIcons.instagram,
                       label: 'Instagram',
                       color: const Color(0xFFE4405F),
+                      onTap: () {
+                        Navigator.pop(context);
+                        final message = AppStrings.get('share_message', lang)
+                            .replaceAll(
+                              '{title}',
+                              widget.episode.effectiveSeriesTitle,
+                            )
+                            .replaceAll(
+                              '{episode}',
+                              widget.episode.episodeNumber.toString(),
+                            );
+                        ShareUtils.shareText(
+                          '$message https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                     _buildShareOption(
                       icon: FontAwesomeIcons.telegram,
                       label: 'Telegram',
                       color: const Color(0xFF0088CC),
+                      onTap: () {
+                        Navigator.pop(context);
+                        final message = AppStrings.get('share_message', lang)
+                            .replaceAll(
+                              '{title}',
+                              widget.episode.effectiveSeriesTitle,
+                            )
+                            .replaceAll(
+                              '{episode}',
+                              widget.episode.episodeNumber.toString(),
+                            );
+                        ShareUtils.shareToTelegram(
+                          '$message https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                     _buildShareOption(
                       icon: FontAwesomeIcons.facebook,
                       label: 'Facebook',
                       color: const Color(0xFF1877F2),
+                      onTap: () {
+                        Navigator.pop(context);
+                        ShareUtils.shareToFacebook(
+                          'https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                     _buildShareOption(
                       icon: FontAwesomeIcons.link,
                       label: AppStrings.get('copy_link', lang),
                       color: Colors.grey,
+                      onTap: () {
+                        Navigator.pop(context);
+                        ShareUtils.copyToClipboard(
+                          context,
+                          'https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                     _buildShareOption(
                       icon: FontAwesomeIcons.ellipsis,
                       label: 'More',
                       color: AppColors.accent,
+                      onTap: () {
+                        Navigator.pop(context);
+                        final message = AppStrings.get('share_message', lang)
+                            .replaceAll(
+                              '{title}',
+                              widget.episode.effectiveSeriesTitle,
+                            )
+                            .replaceAll(
+                              '{episode}',
+                              widget.episode.episodeNumber.toString(),
+                            );
+                        ShareUtils.shareText(
+                          '$message https://dracin.app/series/${widget.episode.seriesId}',
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -1076,31 +1159,35 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
     required IconData icon,
     required String label,
     required Color color,
+    required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.only(right: 24),
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 24),
+        child: Column(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 30),
             ),
-            child: Icon(icon, color: color, size: 30),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: isDark ? Colors.white70 : Colors.black87,
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
