@@ -543,7 +543,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               // Screen is taller than 9:16 (modern phones)
                               return (videoRatio / screenRatio) * 1.0;
                             }
-                            return 0.7; // Slight zoom for standard screens
+                            return 1.0; // Slight zoom for standard screens
                           }(),
                         ),
                 ),
@@ -573,7 +573,9 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                       children: [
                         // 1. Judul Drama (Diatasnya Judul)
                         Text(
-                          widget.episode.effectiveSeriesTitle,
+                          widget.episode.seriesName ??
+                              widget.episode.seriesTitle ??
+                              widget.seriesTitle,
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -685,8 +687,10 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               ),
                               const SizedBox(width: 10),
                               Text(
-                                widget.episode.episodesCount != null
-                                    ? 'Total ${widget.episode.episodesCount} Episode'
+                                (widget.episode.episodesCount ??
+                                            widget.totalEpisodes) >
+                                        0
+                                    ? 'Total ${widget.episode.episodesCount ?? widget.totalEpisodes} Episode'
                                     : 'Episode ${widget.episode.episodeNumber}',
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -776,8 +780,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.network(
-                          widget.episode.seriesBannerUrl ??
-                              widget.episode.thumbnailUrl,
+                          widget.episode.seriesBannerUrl ?? widget.bannerUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
@@ -797,7 +800,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.episode.effectiveSeriesTitle,
+                            widget.episode.seriesTitle ?? widget.seriesTitle,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -817,7 +820,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '${widget.episode.episodesCount ?? "1"} Episodes',
+                              '${widget.episode.episodesCount ?? widget.totalEpisodes} Episodes',
                               style: const TextStyle(
                                 color: AppColors.accent,
                                 fontSize: 12,
@@ -850,7 +853,8 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
                   ),
-                  itemCount: widget.episode.episodesCount ?? 1,
+                  itemCount:
+                      widget.episode.episodesCount ?? widget.totalEpisodes,
                   itemBuilder: (context, index) {
                     final isCurrent = widget.episode.episodeNumber == index + 1;
                     return GestureDetector(
@@ -863,10 +867,12 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                             MaterialPageRoute(
                               builder: (_) => SeriesShortsScreen(
                                 seriesId: widget.episode.seriesId,
-                                title: widget.episode.effectiveSeriesTitle,
+                                title:
+                                    widget.episode.seriesTitle ??
+                                    widget.seriesTitle,
                                 bannerUrl:
                                     widget.episode.seriesBannerUrl ??
-                                    widget.episode.thumbnailUrl,
+                                    widget.bannerUrl,
                                 showBackButton: true,
                                 initialIndex: index,
                               ),
