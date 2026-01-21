@@ -13,6 +13,8 @@ class Series {
   final String bannerUrl;
   @JsonKey(name: 'episodes_count')
   final int? episodesCount;
+  @JsonKey(name: 'watched_episodes_count')
+  final int? watchedEpisodesCount;
   final bool isLoved;
   final Category? category;
   final String? status;
@@ -23,6 +25,7 @@ class Series {
     this.description = '',
     this.bannerUrl = '',
     this.episodesCount,
+    this.watchedEpisodesCount,
     this.isLoved = false,
     this.category,
     this.status,

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/watchlist_service.dart';
 import '../models/watchlist_item_model.dart';
@@ -41,6 +42,8 @@ class WatchlistNotifier extends StateNotifier<AsyncValue<List<WatchlistItem>>> {
     try {
       final response = await _service.getWatchlist();
       state = AsyncValue.data(response.data ?? []);
+
+      debugPrint(response.data.toString());
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
