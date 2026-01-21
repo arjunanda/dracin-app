@@ -29,6 +29,8 @@ class CustomVideoPlayer extends StatefulWidget {
   final double scale; // Scale factor for video (1.0 = normal, >1.0 = zoom in)
   final Function(VideoPlayerController)? onControllerInitialized;
   final VoidCallback? onControllerWillDispose;
+  final VoidCallback? onEnded;
+  final bool looping;
 
   const CustomVideoPlayer({
     super.key,
@@ -43,6 +45,8 @@ class CustomVideoPlayer extends StatefulWidget {
     this.scale = 1.0,
     this.onControllerInitialized,
     this.onControllerWillDispose,
+    this.onEnded,
+    this.looping = true,
   });
 
   @override
@@ -134,7 +138,11 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
       final position = oldController?.value.position ?? Duration.zero;
 
       _controller = nextController;
-      _controller!.setLooping(true);
+      _controller!.setLooping(widget.looping);
+
+      if (widget.onEnded != null) {
+        _controller!.addListener(_videoListener);
+      }
 
       // Restore state
       if (position > Duration.zero) {
@@ -350,6 +358,17 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
       _detectedQuality = 'Auto';
     });
     _initPlayer();
+  }
+
+  void _videoListener() {
+    if (_controller == null || !mounted) return;
+
+    final value = _controller!.value;
+    if (value.isInitialized &&
+        !value.isPlaying &&
+        value.position >= value.duration) {
+      widget.onEnded?.call();
+    }
   }
 
   @override

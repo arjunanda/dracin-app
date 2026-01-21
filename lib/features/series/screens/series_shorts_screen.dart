@@ -508,6 +508,15 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               )
                               .toList(),
                           autoPlay: widget.shouldPlay,
+                          looping: false,
+                          onEnded: () {
+                            if (widget.pageController.hasClients) {
+                              widget.pageController.nextPage(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            }
+                          },
                           aspectRatio: 9 / 16,
                           forceAspectRatio: true,
                           alignment: Alignment.center,
