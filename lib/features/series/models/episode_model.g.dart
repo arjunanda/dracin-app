@@ -45,6 +45,7 @@ Episode _$EpisodeFromJson(Map<String, dynamic> json) => Episode(
   seriesTitle: json['series_title'] as String?,
   episodesCount: (json['episodes_count'] as num?)?.toInt(),
   seriesBannerUrl: json['series_banner_url'] as String?,
+  seriesName: json['series_name'] as String?,
 );
 
 Map<String, dynamic> _$EpisodeToJson(Episode instance) => <String, dynamic>{
@@ -64,4 +65,5 @@ Map<String, dynamic> _$EpisodeToJson(Episode instance) => <String, dynamic>{
   'series_title': instance.seriesTitle,
   'episodes_count': instance.episodesCount,
   'series_banner_url': instance.seriesBannerUrl,
+  'series_name': instance.seriesName,
 };

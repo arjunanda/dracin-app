@@ -61,6 +61,8 @@ class Episode {
   final int? episodesCount;
   @JsonKey(name: 'series_banner_url')
   final String? seriesBannerUrl;
+  @JsonKey(name: 'series_name')
+  final String? seriesName;
 
   Episode({
     required this.id,
@@ -79,7 +81,10 @@ class Episode {
     this.seriesTitle,
     this.episodesCount,
     this.seriesBannerUrl,
+    this.seriesName,
   });
+
+  String get effectiveSeriesTitle => seriesName ?? seriesTitle ?? '';
 
   Episode copyWith({
     String? id,
@@ -95,6 +100,10 @@ class Episode {
     List<EpisodeSubtitle>? subtitles,
     int? likeCount,
     bool? isLiked,
+    String? seriesTitle,
+    int? episodesCount,
+    String? seriesBannerUrl,
+    String? seriesName,
   }) {
     return Episode(
       id: id ?? this.id,
@@ -110,6 +119,10 @@ class Episode {
       subtitles: subtitles ?? this.subtitles,
       likeCount: likeCount ?? this.likeCount,
       isLiked: isLiked ?? this.isLiked,
+      seriesTitle: seriesTitle ?? this.seriesTitle,
+      episodesCount: episodesCount ?? this.episodesCount,
+      seriesBannerUrl: seriesBannerUrl ?? this.seriesBannerUrl,
+      seriesName: seriesName ?? this.seriesName,
     );
   }
 

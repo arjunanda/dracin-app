@@ -43,21 +43,100 @@ class SeriesService {
 
   Future<ApiResponse<List<Episode>>> getEpisodes(String seriesId) async {
     final response = await _dio.get('series/$seriesId/episodes');
-    return ApiResponse<List<Episode>>.fromJson(
-      response.data ?? [],
-      (json) => (json as List)
-          .map((item) => Episode.fromJson(item as Map<String, dynamic>))
-          .toList(),
-    );
+    final data = response.data['data'];
+
+    if (data is Map<String, dynamic> && data.containsKey('data')) {
+      // Nested PaginationData structure
+      final apiResponse = ApiResponse<PaginationData<Episode>>.fromJson(
+        response.data ?? {},
+        (json) => PaginationData<Episode>.fromJson(
+          json as Map<String, dynamic>,
+          (itemJson) => Episode.fromJson(itemJson as Map<String, dynamic>),
+        ),
+      );
+      return ApiResponse<List<Episode>>(
+        success: apiResponse.success,
+        message: apiResponse.message,
+        data: apiResponse.data?.data,
+      );
+    } else {
+      // Direct list structure
+      return ApiResponse<List<Episode>>.fromJson(
+        response.data ?? {},
+        (json) => (json as List)
+            .map((item) => Episode.fromJson(item as Map<String, dynamic>))
+            .toList(),
+      );
+    }
   }
 
-  Future<ApiResponse<List<Episode>>> getFypEpisodes() async {
-    final response = await _dio.get('fyp');
-    return ApiResponse<List<Episode>>.fromJson(
-      response.data ?? [],
-      (json) => (json as List)
-          .map((item) => Episode.fromJson(item as Map<String, dynamic>))
-          .toList(),
+  Future<ApiResponse<List<Episode>>> getFypEpisodes({
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    final response = await _dio.get(
+      'fyp',
+      queryParameters: {'page': page, 'page_size': pageSize},
+    );
+    final data = response.data['data'];
+
+    final List<Episode> initialEpisodes;
+    bool success = response.data['success'] ?? true;
+    String message = response.data['message'] ?? '';
+
+    if (data is Map<String, dynamic> && data.containsKey('data')) {
+      final apiResponse = ApiResponse<PaginationData<Episode>>.fromJson(
+        response.data ?? {},
+        (json) => PaginationData<Episode>.fromJson(
+          json as Map<String, dynamic>,
+          (itemJson) => Episode.fromJson(itemJson as Map<String, dynamic>),
+        ),
+      );
+      initialEpisodes = apiResponse.data?.data ?? [];
+      success = apiResponse.success;
+      message = apiResponse.message;
+    } else {
+      final apiResponse = ApiResponse<List<Episode>>.fromJson(
+        response.data ?? {},
+        (json) => (json as List)
+            .map((item) => Episode.fromJson(item as Map<String, dynamic>))
+            .toList(),
+      );
+      initialEpisodes = apiResponse.data ?? [];
+      success = apiResponse.success;
+      message = apiResponse.message;
+    }
+
+    final List<Episode> enrichedEpisodes = [];
+    final Map<String, Series?> seriesCache = {};
+
+    for (var fypEpisode in initialEpisodes) {
+      try {
+        Series? series;
+        if (seriesCache.containsKey(fypEpisode.seriesId)) {
+          series = seriesCache[fypEpisode.seriesId];
+        } else {
+          final seriesResponse = await getSeriesDetail(fypEpisode.seriesId);
+          series = seriesResponse.data;
+          seriesCache[fypEpisode.seriesId] = series;
+        }
+
+        enrichedEpisodes.add(
+          fypEpisode.copyWith(
+            seriesTitle: series?.title,
+            seriesBannerUrl: series?.bannerUrl,
+            episodesCount: series?.episodesCount,
+          ),
+        );
+      } catch (e) {
+        enrichedEpisodes.add(fypEpisode);
+      }
+    }
+
+    return ApiResponse<List<Episode>>(
+      success: success,
+      message: message,
+      data: enrichedEpisodes,
     );
   }
 

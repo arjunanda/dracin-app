@@ -161,16 +161,46 @@ class FypEpisodesNotifier extends StateNotifier<List<Episode>> {
   final Set<String> _pendingLikeIds = {};
   final Map<String, DateTime> _lastLikeActionTimes = {};
 
+  int _page = 1;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+
   FypEpisodesNotifier(this._service, this._storage) : super([]) {
     loadFypEpisodes();
   }
 
   Future<void> loadFypEpisodes() async {
+    _page = 1;
+    _hasMore = true;
     try {
-      final response = await _service.getFypEpisodes();
-      state = response.data ?? [];
+      final response = await _service.getFypEpisodes(page: _page);
+      final newEpisodes = response.data ?? [];
+      if (newEpisodes.isEmpty) _hasMore = false;
+      state = newEpisodes;
     } catch (e) {
       // Handle error
+    }
+  }
+
+  Future<void> loadMoreFypEpisodes() async {
+    if (_isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
+
+    try {
+      final nextPage = _page + 1;
+      final response = await _service.getFypEpisodes(page: nextPage);
+      final newEpisodes = response.data ?? [];
+
+      if (newEpisodes.isEmpty) {
+        _hasMore = false;
+      } else {
+        _page = nextPage;
+        state = [...state, ...newEpisodes];
+      }
+    } catch (e) {
+      // Handle error
+    } finally {
+      _isLoadingMore = false;
     }
   }
 
