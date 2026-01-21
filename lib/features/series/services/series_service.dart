@@ -62,7 +62,9 @@ class SeriesService {
   }
 
   Future<ApiResponse<void>> toggleLove(String id, bool love) async {
-    final response = await _dio.post('series/$id/love', data: {'love': love});
+    final response = love
+        ? await _dio.post('series/$id/love')
+        : await _dio.delete('series/$id/love');
     return ApiResponse<void>.fromJson(response.data ?? {}, (json) {});
   }
 

@@ -13,6 +13,7 @@ import '../../../core/services/device_service.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
+import '../../home/providers/series_provider.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
@@ -321,6 +322,8 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
   bool _isLockingLike = false;
   Timer? _lockTimer;
 
+  bool? _localIsLoved;
+
   @override
   void initState() {
     super.initState();
@@ -401,6 +404,37 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
         });
       }
     });
+  }
+
+  void _handleWatchlist() async {
+    final authState = ref.read(authProvider);
+    if (authState.status != AuthStatus.authenticated) {
+      _showLoginRequiredDialog();
+      return;
+    }
+
+    final seriesId = widget.episode.seriesId;
+    final currentState = _localIsLoved ?? false;
+
+    setState(() {
+      _localIsLoved = !currentState;
+    });
+
+    try {
+      await ref
+          .read(seriesServiceProvider)
+          .toggleLove(seriesId, _localIsLoved!);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _localIsLoved = currentState;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {});
+      }
+    }
   }
 
   void _showLoginRequiredDialog() {
@@ -603,6 +637,20 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                 child: RepaintBoundary(
                   child: Column(
                     children: [
+                      _buildSideAction(
+                        icon: (_localIsLoved ?? false)
+                            ? Icons.bookmark
+                            : Icons.bookmark_add_outlined,
+                        label: AppStrings.get(
+                          'watchlist',
+                          ref.read(languageProvider),
+                        ),
+                        color: (_localIsLoved ?? false)
+                            ? AppColors.primary
+                            : Colors.white,
+                        onTap: _handleWatchlist,
+                      ),
+                      const SizedBox(height: 20),
                       _buildSideAction(
                         icon: _isLiked ? Icons.favorite : Icons.favorite_border,
                         label: FormatUtils.formatNumber(_likeCount),
