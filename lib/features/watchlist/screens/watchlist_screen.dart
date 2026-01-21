@@ -429,9 +429,9 @@ class WatchlistScreen extends ConsumerWidget {
                           children: [
                             Row(
                               children: [
-                                const Text(
-                                  "Episode 3",
-                                  style: TextStyle(
+                                Text(
+                                  "Episode ${series.watchedEpisodesCount ?? 0}",
+                                  style: const TextStyle(
                                     fontSize: 11,
                                     color: AppColors.accent,
                                     fontWeight: FontWeight.w900,
@@ -451,7 +451,12 @@ class WatchlistScreen extends ConsumerWidget {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(6),
                               child: LinearProgressIndicator(
-                                value: 0.4,
+                                value:
+                                    (series.episodesCount != null &&
+                                        series.episodesCount! > 0)
+                                    ? (series.watchedEpisodesCount ?? 0) /
+                                          series.episodesCount!
+                                    : 0.0,
                                 backgroundColor: Colors.white.withOpacity(0.05),
                                 valueColor: const AlwaysStoppedAnimation<Color>(
                                   AppColors.primary,

@@ -12,6 +12,7 @@ Series _$SeriesFromJson(Map<String, dynamic> json) => Series(
   description: json['description'] as String,
   bannerUrl: json['banner_url'] as String,
   episodesCount: (json['episodes_count'] as num?)?.toInt(),
+  watchedEpisodesCount: (json['watched_episodes_count'] as num?)?.toInt(),
   isLoved: json['isLoved'] as bool? ?? false,
   category: json['category'] == null
       ? null
@@ -25,6 +26,7 @@ Map<String, dynamic> _$SeriesToJson(Series instance) => <String, dynamic>{
   'description': instance.description,
   'banner_url': instance.bannerUrl,
   'episodes_count': instance.episodesCount,
+  'watched_episodes_count': instance.watchedEpisodesCount,
   'isLoved': instance.isLoved,
   'category': instance.category,
   'status': instance.status,

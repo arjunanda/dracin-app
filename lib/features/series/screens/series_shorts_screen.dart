@@ -472,6 +472,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
   }
 
   void _showLoginRequiredDialog() {
+    _videoController?.pause();
     final lang = ref.read(languageProvider);
     showDialog(
       context: context,
