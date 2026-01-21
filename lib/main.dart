@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'features/navigation/screens/main_navigation_screen.dart';
@@ -11,6 +12,9 @@ void main() async {
 
   // Initialize AdMob
   await AdMobService.initialize();
+
+  // Keep screen active
+  WakelockPlus.enable();
 
   runApp(const ProviderScope(child: MyApp()));
 }

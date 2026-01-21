@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/watchlist_service.dart';
+import '../models/watchlist_item_model.dart';
 import '../../home/models/series_model.dart';
 import '../../../core/network/api_client.dart';
 
@@ -8,13 +9,15 @@ final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   return WatchlistService(dio);
 });
 
-final watchlistProvider =
-    StateNotifierProvider<WatchlistNotifier, AsyncValue<List<Series>>>((ref) {
+final myWatchlistProvider =
+    StateNotifierProvider<WatchlistNotifier, AsyncValue<List<WatchlistItem>>>((
+      ref,
+    ) {
       final service = ref.read(watchlistServiceProvider);
       return WatchlistNotifier(service);
     });
 
-class WatchlistNotifier extends StateNotifier<AsyncValue<List<Series>>> {
+class WatchlistNotifier extends StateNotifier<AsyncValue<List<WatchlistItem>>> {
   final WatchlistService _service;
 
   WatchlistNotifier(this._service) : super(const AsyncValue.loading()) {
@@ -34,11 +37,7 @@ class WatchlistNotifier extends StateNotifier<AsyncValue<List<Series>>> {
   Future<void> addToWatchlist(Series series) async {
     try {
       await _service.addToWatchlist(series.id);
-      state.whenData((list) {
-        if (!list.any((item) => item.id == series.id)) {
-          state = AsyncValue.data([...list, series]);
-        }
-      });
+      await loadWatchlist();
     } catch (e) {
       // Handle error
     }
@@ -49,7 +48,7 @@ class WatchlistNotifier extends StateNotifier<AsyncValue<List<Series>>> {
       await _service.removeFromWatchlist(seriesId);
       state.whenData((list) {
         state = AsyncValue.data(
-          list.where((item) => item.id != seriesId).toList(),
+          list.where((item) => item.seriesId != seriesId).toList(),
         );
       });
     } catch (e) {
@@ -58,10 +57,9 @@ class WatchlistNotifier extends StateNotifier<AsyncValue<List<Series>>> {
   }
 
   bool isInWatchlist(String seriesId) {
-    return state.when(
-      data: (list) => list.any((item) => item.id == seriesId),
-      loading: () => false,
-      error: (_, __) => false,
+    return state.maybeWhen(
+      data: (list) => list.any((item) => item.seriesId == seriesId),
+      orElse: () => false,
     );
   }
 }

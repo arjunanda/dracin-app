@@ -15,6 +15,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../../core/utils/share_utils.dart';
 import '../../home/providers/series_provider.dart';
+import '../../watchlist/providers/watchlist_provider.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
@@ -422,7 +423,15 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
     }
 
     final seriesId = widget.episode.seriesId;
-    final currentState = _localIsLoved ?? false;
+
+    // Get current state from provider if local is null
+    final watchlist = ref.read(myWatchlistProvider);
+    final inWatchlist = watchlist.maybeWhen(
+      data: (list) => list.any((item) => item.seriesId == seriesId),
+      orElse: () => false,
+    );
+
+    final currentState = _localIsLoved ?? inWatchlist;
 
     setState(() {
       _localIsLoved = !currentState;
@@ -432,15 +441,13 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
       await ref
           .read(seriesServiceProvider)
           .toggleLove(seriesId, _localIsLoved!);
+      // Invalidate to refresh global state
+      ref.invalidate(myWatchlistProvider);
     } catch (e) {
       if (mounted) {
         setState(() {
           _localIsLoved = currentState;
         });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {});
       }
     }
   }
@@ -665,18 +672,42 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                 child: RepaintBoundary(
                   child: Column(
                     children: [
-                      _buildSideAction(
-                        icon: (_localIsLoved ?? false)
-                            ? Icons.bookmark
-                            : Icons.bookmark_add_outlined,
-                        label: AppStrings.get(
-                          'watchlist',
-                          ref.read(languageProvider),
-                        ),
-                        color: (_localIsLoved ?? false)
-                            ? AppColors.primary
-                            : Colors.white,
-                        onTap: _handleWatchlist,
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final authState = ref.watch(authProvider);
+                          final isAuthenticated =
+                              authState.status == AuthStatus.authenticated;
+
+                          final watchlist = ref.watch(myWatchlistProvider);
+                          final inWatchlist = isAuthenticated
+                              ? watchlist.maybeWhen(
+                                  data: (list) => list.any(
+                                    (item) =>
+                                        item.seriesId ==
+                                        widget.episode.seriesId,
+                                  ),
+                                  orElse: () => false,
+                                )
+                              : false;
+
+                          final currentIsLoved = isAuthenticated
+                              ? (_localIsLoved ?? inWatchlist)
+                              : false;
+
+                          return _buildSideAction(
+                            icon: currentIsLoved
+                                ? Icons.bookmark
+                                : Icons.bookmark_add_outlined,
+                            label: AppStrings.get(
+                              'watchlist',
+                              ref.read(languageProvider),
+                            ),
+                            color: currentIsLoved
+                                ? AppColors.primary
+                                : Colors.white,
+                            onTap: _handleWatchlist,
+                          );
+                        },
                       ),
                       const SizedBox(height: 20),
                       _buildSideAction(

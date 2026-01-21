@@ -18,7 +18,7 @@ class WatchlistScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    final watchlistAsync = ref.watch(watchlistProvider);
+    final watchlistAsync = ref.watch(myWatchlistProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = ref.watch(languageProvider);
     final primaryTextColor = isDark ? Colors.white : Colors.black87;
@@ -114,7 +114,7 @@ class WatchlistScreen extends ConsumerWidget {
                   CupertinoSliverRefreshControl(
                     onRefresh: () async {
                       await ref
-                          .read(watchlistProvider.notifier)
+                          .read(myWatchlistProvider.notifier)
                           .loadWatchlist();
                     },
                   ),
@@ -137,7 +137,7 @@ class WatchlistScreen extends ConsumerWidget {
                         delegate: SliverChildBuilderDelegate(
                           (context, index) => _buildWatchlistCard(
                             context,
-                            watchlist[index],
+                            watchlist[index].series,
                             primaryTextColor,
                             secondaryTextColor,
                             isDark,
@@ -161,8 +161,9 @@ class WatchlistScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () =>
-                          ref.read(watchlistProvider.notifier).loadWatchlist(),
+                      onPressed: () => ref
+                          .read(myWatchlistProvider.notifier)
+                          .loadWatchlist(),
                       child: const Text('Retry'),
                     ),
                   ],

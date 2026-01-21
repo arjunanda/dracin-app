@@ -9,15 +9,49 @@ import '../../player/screens/player_screen.dart';
 import '../../../core/network/ad_service.dart';
 import '../../comment/widgets/comment_section.dart';
 
-class SeriesDetailScreen extends ConsumerWidget {
+import '../../watchlist/providers/watchlist_provider.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../auth/screens/login_screen.dart';
+
+class SeriesDetailScreen extends ConsumerStatefulWidget {
   final Series series;
 
   const SeriesDetailScreen({super.key, required this.series});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final episodes = ref.watch(episodesProvider(series.id));
+  ConsumerState<SeriesDetailScreen> createState() => _SeriesDetailScreenState();
+}
+
+class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
+  bool? _isLoved;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLoved = widget.series.isLoved;
+    _fetchWatchlistStatus();
+  }
+
+  Future<void> _fetchWatchlistStatus() async {
+    try {
+      final response = await ref
+          .read(seriesServiceProvider)
+          .getWatchlistStatus(widget.series.id);
+      if (response.success && mounted) {
+        setState(() {
+          _isLoved = response.data;
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final episodes = ref.watch(episodesProvider(widget.series.id));
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final series = widget.series;
 
     return Scaffold(
       backgroundColor: isDark
@@ -221,22 +255,67 @@ class SeriesDetailScreen extends ConsumerWidget {
                             color: Colors.white.withOpacity(0.1),
                           ),
                         ),
-                        child: IconButton(
-                          onPressed: () {
-                            ref
-                                .read(seriesServiceProvider)
-                                .toggleLove(series.id, !series.isLoved);
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final authState = ref.watch(authProvider);
+                            final isAuthenticated =
+                                authState.status == AuthStatus.authenticated;
+
+                            final watchlist = ref.watch(myWatchlistProvider);
+                            final inWatchlist = isAuthenticated
+                                ? watchlist.maybeWhen(
+                                    data: (list) => list.any(
+                                      (item) => item.seriesId == series.id,
+                                    ),
+                                    orElse: () => false,
+                                  )
+                                : false;
+                            final isSeriesLoved = isAuthenticated
+                                ? (_isLoved ?? inWatchlist)
+                                : false;
+
+                            return IconButton(
+                              onPressed: () async {
+                                if (!isAuthenticated) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const LoginScreen(),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                final newState = !isSeriesLoved;
+                                setState(() {
+                                  _isLoved = newState;
+                                });
+                                try {
+                                  await ref
+                                      .read(seriesServiceProvider)
+                                      .toggleLove(series.id, newState);
+                                  // Refresh watchlist to stay in sync
+                                  ref.invalidate(myWatchlistProvider);
+                                } catch (e) {
+                                  if (mounted) {
+                                    setState(() {
+                                      _isLoved = isSeriesLoved;
+                                    });
+                                  }
+                                }
+                              },
+                              icon: Icon(
+                                isSeriesLoved
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_outline_rounded,
+                                color: isSeriesLoved
+                                    ? AppColors.primary
+                                    : (isDark ? Colors.white : Colors.black),
+                                size: 28,
+                              ),
+                              padding: const EdgeInsets.all(16),
+                            );
                           },
-                          icon: Icon(
-                            series.isLoved
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_outline_rounded,
-                            color: series.isLoved
-                                ? AppColors.primary
-                                : (isDark ? Colors.white : Colors.black),
-                            size: 28,
-                          ),
-                          padding: const EdgeInsets.all(16),
                         ),
                       ),
                     ],

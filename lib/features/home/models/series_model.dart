@@ -7,8 +7,9 @@ part 'series_model.g.dart';
 class Series {
   final String id;
   final String title;
+  @JsonKey(defaultValue: '')
   final String description;
-  @JsonKey(name: 'banner_url')
+  @JsonKey(name: 'banner_url', defaultValue: '')
   final String bannerUrl;
   @JsonKey(name: 'episodes_count')
   final int? episodesCount;
@@ -19,8 +20,8 @@ class Series {
   Series({
     required this.id,
     required this.title,
-    required this.description,
-    required this.bannerUrl,
+    this.description = '',
+    this.bannerUrl = '',
     this.episodesCount,
     this.isLoved = false,
     this.category,

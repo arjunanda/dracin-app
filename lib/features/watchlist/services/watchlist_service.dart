@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../home/models/series_model.dart';
+import '../models/watchlist_item_model.dart';
 import '../../../core/network/models/api_response.dart';
 
 class WatchlistService {
@@ -7,26 +7,23 @@ class WatchlistService {
 
   WatchlistService(this._dio);
 
-  Future<ApiResponse<List<Series>>> getWatchlist() async {
+  Future<ApiResponse<List<WatchlistItem>>> getWatchlist() async {
     final response = await _dio.get('me/watchlist');
-    return ApiResponse<List<Series>>.fromJson(
+    return ApiResponse<List<WatchlistItem>>.fromJson(
       response.data,
       (json) => (json as List)
-          .map((item) => Series.fromJson(item as Map<String, dynamic>))
+          .map((item) => WatchlistItem.fromJson(item as Map<String, dynamic>))
           .toList(),
     );
   }
 
   Future<ApiResponse<void>> addToWatchlist(String seriesId) async {
-    final response = await _dio.post(
-      'me/watchlist',
-      data: {'series_id': seriesId},
-    );
+    final response = await _dio.post('series/$seriesId/love');
     return ApiResponse<void>.fromJson(response.data, (json) => null);
   }
 
   Future<ApiResponse<void>> removeFromWatchlist(String seriesId) async {
-    final response = await _dio.delete('me/watchlist/$seriesId');
+    final response = await _dio.delete('series/$seriesId/love');
     return ApiResponse<void>.fromJson(response.data, (json) => null);
   }
 }

@@ -147,6 +147,23 @@ class SeriesService {
     return ApiResponse<void>.fromJson(response.data ?? {}, (json) {});
   }
 
+  Future<ApiResponse<bool>> getWatchlistStatus(String id) async {
+    try {
+      final response = await _dio.get('series/$id/watchlist-status');
+      return ApiResponse<bool>.fromJson(
+        response.data ?? {},
+        (json) =>
+            (json as Map<String, dynamic>)['in_watchlist'] as bool? ?? false,
+      );
+    } catch (e) {
+      return ApiResponse<bool>(
+        success: false,
+        message: e.toString(),
+        data: false,
+      );
+    }
+  }
+
   Future<ApiResponse<void>> likeEpisode(
     String episodeId, [
     String? token,
