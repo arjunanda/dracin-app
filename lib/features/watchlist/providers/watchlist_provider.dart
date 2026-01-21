@@ -3,6 +3,7 @@ import '../services/watchlist_service.dart';
 import '../models/watchlist_item_model.dart';
 import '../../home/models/series_model.dart';
 import '../../../core/network/api_client.dart';
+import '../../auth/providers/auth_provider.dart';
 
 final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   final dio = ref.read(apiClientProvider);
@@ -13,15 +14,26 @@ final myWatchlistProvider =
     StateNotifierProvider<WatchlistNotifier, AsyncValue<List<WatchlistItem>>>((
       ref,
     ) {
+      final authState = ref.watch(authProvider);
       final service = ref.read(watchlistServiceProvider);
+
+      if (authState.status != AuthStatus.authenticated) {
+        return WatchlistNotifier(service, shouldLoad: false);
+      }
+
       return WatchlistNotifier(service);
     });
 
 class WatchlistNotifier extends StateNotifier<AsyncValue<List<WatchlistItem>>> {
   final WatchlistService _service;
 
-  WatchlistNotifier(this._service) : super(const AsyncValue.loading()) {
-    loadWatchlist();
+  WatchlistNotifier(this._service, {bool shouldLoad = true})
+    : super(const AsyncValue.loading()) {
+    if (shouldLoad) {
+      loadWatchlist();
+    } else {
+      state = const AsyncValue.data([]);
+    }
   }
 
   Future<void> loadWatchlist() async {
