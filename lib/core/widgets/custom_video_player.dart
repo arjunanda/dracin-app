@@ -31,6 +31,9 @@ class CustomVideoPlayer extends StatefulWidget {
   final VoidCallback? onControllerWillDispose;
   final VoidCallback? onEnded;
   final bool looping;
+  final ValueChanged<bool>? onControlsVisibilityChanged;
+  final bool disableControlsToggle;
+  final bool showControlsOnInit;
 
   const CustomVideoPlayer({
     super.key,
@@ -47,6 +50,9 @@ class CustomVideoPlayer extends StatefulWidget {
     this.onControllerWillDispose,
     this.onEnded,
     this.looping = true,
+    this.onControlsVisibilityChanged,
+    this.disableControlsToggle = false,
+    this.showControlsOnInit = false,
   });
 
   @override
@@ -162,6 +168,13 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
           widget.onControllerInitialized!(_controller!);
         }
 
+        // Show controls on init if requested
+        if (widget.showControlsOnInit && isFirstInit) {
+          _showControls = true;
+          widget.onControlsVisibilityChanged?.call(true);
+          _resetHideTimer();
+        }
+
         // Load subtitles ONLY after video is ready
         if (_selectedSubtitleIndex != -1 && widget.subtitles != null) {
           _loadSubtitle(widget.subtitles![_selectedSubtitleIndex].url);
@@ -229,6 +242,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     setState(() {
       _showControls = !_showControls;
     });
+    widget.onControlsVisibilityChanged?.call(_showControls);
     if (_showControls) {
       _resetHideTimer();
     }
@@ -241,6 +255,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
         setState(() {
           _showControls = false;
         });
+        widget.onControlsVisibilityChanged?.call(false);
       }
     });
   }
@@ -437,7 +452,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     }
 
     return GestureDetector(
-      onTap: _toggleControls,
+      onTap: widget.disableControlsToggle ? null : _toggleControls,
       child: Stack(
         fit: StackFit.expand,
         children: [

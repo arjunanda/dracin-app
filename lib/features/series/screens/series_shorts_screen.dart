@@ -43,6 +43,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
   late PageController _pageController;
   final ValueNotifier<int> _currentIndexNotifier = ValueNotifier<int>(0);
   final ValueNotifier<bool> _isAdShowingNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _showControlsNotifier = ValueNotifier<bool>(false);
 
   // AdMob instances
   final AdMobService _adMobService = AdMobService();
@@ -75,6 +76,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
     _pageController.dispose();
     _currentIndexNotifier.dispose();
     _isAdShowingNotifier.dispose();
+    _showControlsNotifier.dispose();
     super.dispose();
   }
 
@@ -197,6 +199,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                                   }
                                 },
                                 pageController: _pageController,
+                                showControlsNotifier: _showControlsNotifier,
                               );
                             },
                           );
@@ -226,62 +229,75 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
           ),
 
           // Back Button & Title Overlay
-          Positioned(
-            top: 40,
-            left: widget.showBackButton ? 8 : 20,
-            right: 16,
-            child: Row(
-              children: [
-                if (widget.showBackButton) ...[
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(width: 4),
-                ] else if (isFyp) ...[
-                  Image.asset(
-                    'assets/logo.png',
-                    height: 28,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(width: 12),
-                ],
-                Expanded(
+          ValueListenableBuilder<bool>(
+            valueListenable: _showControlsNotifier,
+            builder: (context, showControls, _) {
+              return Positioned(
+                top: 40,
+                left: widget.showBackButton ? 8 : 20,
+                right: 16,
+                child: AnimatedOpacity(
+                  opacity: showControls ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 300),
                   child: IgnorePointer(
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: _currentIndexNotifier,
-                      builder: (context, currentIndex, _) {
-                        return Text(
-                          episodes.isNotEmpty && currentIndex < episodes.length
-                              ? 'Episode ${episodes[currentIndex].episodeNumber}'
-                              : widget.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black,
-                                blurRadius: 4,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
+                    ignoring: !showControls,
+                    child: Row(
+                      children: [
+                        if (widget.showBackButton) ...[
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
+                          const SizedBox(width: 4),
+                        ] else if (isFyp) ...[
+                          Image.asset(
+                            'assets/logo.png',
+                            height: 28,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(
+                          child: IgnorePointer(
+                            child: ValueListenableBuilder<int>(
+                              valueListenable: _currentIndexNotifier,
+                              builder: (context, currentIndex, _) {
+                                return Text(
+                                  episodes.isNotEmpty &&
+                                          currentIndex < episodes.length
+                                      ? 'Episode ${episodes[currentIndex].episodeNumber}'
+                                      : widget.title,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black,
+                                        blurRadius: 4,
+                                        offset: Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        // Add a spacer to ensure we don't overlap with the player's top-right buttons
+                        const SizedBox(width: 120),
+                      ],
                     ),
                   ),
                 ),
-                // Add a spacer to ensure we don't overlap with the player's top-right buttons
-                const SizedBox(width: 120),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),
@@ -300,6 +316,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
   final VoidCallback onLike;
   final VoidCallback onView;
   final PageController pageController;
+  final ValueNotifier<bool> showControlsNotifier;
 
   const _ShortVideoItem({
     super.key,
@@ -313,6 +330,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
     required this.onLike,
     required this.onView,
     required this.pageController,
+    required this.showControlsNotifier,
   });
 
   @override
@@ -332,6 +350,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
   Timer? _lockTimer;
 
   bool? _localIsLoved;
+  bool _showOverlays = false;
 
   @override
   void initState() {
@@ -523,79 +542,122 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
           child: Stack(
             children: [
               Positioned.fill(
-                child: RepaintBoundary(
-                  child: !widget.shouldLoad
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
+                child: GestureDetector(
+                  onTap: widget.seriesId == 'fyp'
+                      ? () async {
+                          // Pause video before navigation
+                          _videoController?.pause();
+
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SeriesShortsScreen(
+                                seriesId: widget.episode.seriesId,
+                                title: widget.episode.effectiveSeriesTitle,
+                                bannerUrl:
+                                    widget.episode.seriesBannerUrl ??
+                                    widget.bannerUrl,
+                                showBackButton: true,
+                                initialIndex: widget.episode.episodeNumber - 1,
+                              ),
+                            ),
+                          );
+
+                          // Restart video from beginning when returning
+                          if (mounted && _videoController != null) {
+                            await _videoController!.seekTo(Duration.zero);
+                            await _videoController!.play();
+                          }
+                        }
+                      : null,
+                  child: RepaintBoundary(
+                    child: !widget.shouldLoad
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : CustomVideoPlayer(
+                            key: ValueKey(widget.episode.id),
+                            sources: [
+                              VideoSource(
+                                label: 'Auto',
+                                url: widget.episode.hlsMasterUrl,
+                              ),
+                              ...widget.episode.renditions.map(
+                                (r) => VideoSource(
+                                  label: r.resolution,
+                                  url: r.url,
+                                ),
+                              ),
+                            ],
+                            subtitles: widget.episode.subtitles
+                                .map(
+                                  (s) => SubtitleSource(
+                                    label: s.lang,
+                                    url: s.file,
+                                  ),
+                                )
+                                .toList(),
+                            autoPlay: widget.shouldPlay,
+                            looping: false,
+                            onEnded: () {
+                              if (widget.pageController.hasClients) {
+                                widget.pageController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            },
+                            aspectRatio: 9 / 16,
+                            forceAspectRatio: true,
+                            alignment: Alignment.center,
+                            fit: BoxFit.contain,
+                            showDefaultProgressBar: false,
+                            onControllerInitialized: (controller) {
+                              if (mounted) {
+                                Future.microtask(() {
+                                  if (mounted) {
+                                    setState(() {
+                                      _videoController = controller;
+                                    });
+                                  }
+                                });
+                              }
+                            },
+                            onControllerWillDispose: () {
+                              if (mounted) {
+                                Future.microtask(() {
+                                  if (mounted) {
+                                    setState(() {
+                                      _videoController = null;
+                                    });
+                                  }
+                                });
+                              }
+                            },
+                            onControlsVisibilityChanged: (visible) {
+                              if (mounted) {
+                                setState(() {
+                                  _showOverlays = visible;
+                                });
+                                widget.showControlsNotifier.value = visible;
+                              }
+                            },
+                            disableControlsToggle: widget.seriesId == 'fyp',
+                            showControlsOnInit: widget.seriesId != 'fyp',
+                            scale: () {
+                              final size = MediaQuery.of(context).size;
+                              final screenRatio = size.width / size.height;
+                              const videoRatio = 9 / 16;
+                              if (screenRatio < videoRatio) {
+                                // Screen is taller than 9:16 (modern phones)
+                                return (videoRatio / screenRatio) * 1.0;
+                              }
+                              return 1.0; // Slight zoom for standard screens
+                            }(),
                           ),
-                        )
-                      : CustomVideoPlayer(
-                          key: ValueKey(widget.episode.id),
-                          sources: [
-                            VideoSource(
-                              label: 'Auto',
-                              url: widget.episode.hlsMasterUrl,
-                            ),
-                            ...widget.episode.renditions.map(
-                              (r) =>
-                                  VideoSource(label: r.resolution, url: r.url),
-                            ),
-                          ],
-                          subtitles: widget.episode.subtitles
-                              .map(
-                                (s) =>
-                                    SubtitleSource(label: s.lang, url: s.file),
-                              )
-                              .toList(),
-                          autoPlay: widget.shouldPlay,
-                          looping: false,
-                          onEnded: () {
-                            if (widget.pageController.hasClients) {
-                              widget.pageController.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            }
-                          },
-                          aspectRatio: 9 / 16,
-                          forceAspectRatio: true,
-                          alignment: Alignment.center,
-                          fit: BoxFit.contain,
-                          showDefaultProgressBar: false,
-                          onControllerInitialized: (controller) {
-                            if (mounted) {
-                              Future.microtask(() {
-                                if (mounted) {
-                                  setState(() {
-                                    _videoController = controller;
-                                  });
-                                }
-                              });
-                            }
-                          },
-                          onControllerWillDispose: () {
-                            if (mounted) {
-                              Future.microtask(() {
-                                if (mounted) {
-                                  setState(() {
-                                    _videoController = null;
-                                  });
-                                }
-                              });
-                            }
-                          },
-                          scale: () {
-                            final size = MediaQuery.of(context).size;
-                            final screenRatio = size.width / size.height;
-                            const videoRatio = 9 / 16;
-                            if (screenRatio < videoRatio) {
-                              // Screen is taller than 9:16 (modern phones)
-                              return (videoRatio / screenRatio) * 1.0;
-                            }
-                            return 1.0; // Slight zoom for standard screens
-                          }(),
-                        ),
+                  ),
                 ),
               ),
 
@@ -617,49 +679,60 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                         ],
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 1. Judul Drama (Diatasnya Judul)
-                        Text(
-                          widget.episode.seriesName ??
-                              widget.episode.seriesTitle ??
-                              widget.seriesTitle,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 19, // Slightly larger for prominence
-                            letterSpacing: 0.5,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withOpacity(0.9),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
+                    child: AnimatedOpacity(
+                      opacity: widget.seriesId == 'fyp'
+                          ? 1.0
+                          : (_showOverlays ? 1.0 : 0.0),
+                      duration: const Duration(milliseconds: 300),
+                      child: IgnorePointer(
+                        ignoring: widget.seriesId == 'fyp'
+                            ? false
+                            : !_showOverlays,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 1. Judul Drama (Diatasnya Judul)
+                            Text(
+                              widget.episode.seriesName ??
+                                  widget.episode.seriesTitle ??
+                                  widget.seriesTitle,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 19, // Slightly larger for prominence
+                                letterSpacing: 0.5,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.9),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        // 2. Episode Saja (Dibawahnya)
-                        Text(
-                          'Episode ${widget.episode.episodeNumber}',
-                          style: const TextStyle(
-                            color: AppColors.accent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black,
-                                blurRadius: 4,
-                                offset: Offset(0, 1),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            // 2. Episode Saja (Dibawahnya)
+                            Text(
+                              'Episode ${widget.episode.episodeNumber}',
+                              style: const TextStyle(
+                                color: AppColors.accent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 1),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -669,64 +742,75 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
               Positioned(
                 right: 12,
                 bottom: 20,
-                child: RepaintBoundary(
-                  child: Column(
-                    children: [
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final authState = ref.watch(authProvider);
-                          final isAuthenticated =
-                              authState.status == AuthStatus.authenticated;
+                child: AnimatedOpacity(
+                  opacity: widget.seriesId == 'fyp'
+                      ? 1.0
+                      : (_showOverlays ? 1.0 : 0.0),
+                  duration: const Duration(milliseconds: 300),
+                  child: IgnorePointer(
+                    ignoring: widget.seriesId == 'fyp' ? false : !_showOverlays,
+                    child: RepaintBoundary(
+                      child: Column(
+                        children: [
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final authState = ref.watch(authProvider);
+                              final isAuthenticated =
+                                  authState.status == AuthStatus.authenticated;
 
-                          final watchlist = ref.watch(myWatchlistProvider);
-                          final inWatchlist = isAuthenticated
-                              ? watchlist.maybeWhen(
-                                  data: (list) => list.any(
-                                    (item) =>
-                                        item.seriesId ==
-                                        widget.episode.seriesId,
-                                  ),
-                                  orElse: () => false,
-                                )
-                              : false;
+                              final watchlist = ref.watch(myWatchlistProvider);
+                              final inWatchlist = isAuthenticated
+                                  ? watchlist.maybeWhen(
+                                      data: (list) => list.any(
+                                        (item) =>
+                                            item.seriesId ==
+                                            widget.episode.seriesId,
+                                      ),
+                                      orElse: () => false,
+                                    )
+                                  : false;
 
-                          final currentIsLoved = isAuthenticated
-                              ? (_localIsLoved ?? inWatchlist)
-                              : false;
+                              final currentIsLoved = isAuthenticated
+                                  ? (_localIsLoved ?? inWatchlist)
+                                  : false;
 
-                          return _buildSideAction(
-                            icon: currentIsLoved
-                                ? Icons.bookmark
-                                : Icons.bookmark_add_outlined,
-                            label: AppStrings.get(
-                              'watchlist',
-                              ref.read(languageProvider),
-                            ),
-                            color: currentIsLoved
-                                ? AppColors.primary
+                              return _buildSideAction(
+                                icon: currentIsLoved
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_add_outlined,
+                                label: AppStrings.get(
+                                  'watchlist',
+                                  ref.read(languageProvider),
+                                ),
+                                color: currentIsLoved
+                                    ? AppColors.primary
+                                    : Colors.white,
+                                onTap: _handleWatchlist,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          _buildSideAction(
+                            icon: _isLiked
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            label: FormatUtils.formatNumber(_likeCount),
+                            color: _isLiked
+                                ? const Color(0xFFFFD700)
                                 : Colors.white,
-                            onTap: _handleWatchlist,
-                          );
-                        },
+                            animation: _likeAnimation,
+                            onTap: _handleLike,
+                          ),
+                          const SizedBox(height: 20),
+                          _buildSideAction(
+                            icon: Icons.share,
+                            label: 'Share',
+                            color: Colors.white,
+                            onTap: _showShareBottomSheet,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 20),
-                      _buildSideAction(
-                        icon: _isLiked ? Icons.favorite : Icons.favorite_border,
-                        label: FormatUtils.formatNumber(_likeCount),
-                        color: _isLiked
-                            ? const Color(0xFFFFD700)
-                            : Colors.white,
-                        animation: _likeAnimation,
-                        onTap: _handleLike,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildSideAction(
-                        icon: Icons.share,
-                        label: 'Share',
-                        color: Colors.white,
-                        onTap: _showShareBottomSheet,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
