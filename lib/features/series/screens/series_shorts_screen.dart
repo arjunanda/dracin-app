@@ -784,7 +784,9 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                                   ref.read(languageProvider),
                                 ),
                                 color: currentIsLoved
-                                    ? AppColors.primary
+                                    ? const Color(
+                                        0xFFFFD700,
+                                      ) // Yellow/Gold for Wishlist
                                     : Colors.white,
                                 onTap: _handleWatchlist,
                               );
@@ -797,7 +799,8 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                                 : Icons.favorite_border,
                             label: FormatUtils.formatNumber(_likeCount),
                             color: _isLiked
-                                ? const Color(0xFFFFD700)
+                                ? Colors
+                                      .red // Red for Love
                                 : Colors.white,
                             animation: _likeAnimation,
                             onTap: _handleLike,
