@@ -290,12 +290,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         sliver: SliverGrid(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 0.65,
+            childAspectRatio: 0.55,
             crossAxisSpacing: 16,
-            mainAxisSpacing: 20,
+            mainAxisSpacing: 24,
           ),
           delegate: SliverChildBuilderDelegate((context, index) {
             final s = series[index % series.length];
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+
             return GestureDetector(
               onTap: () {
                 Navigator.of(context).push(
@@ -309,80 +311,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 );
               },
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Poster Image - tanpa teks di dalamnya
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
                         child: Image.network(
                           s.bannerUrl,
                           fit: BoxFit.cover,
+                          width: double.infinity,
                           errorBuilder: (c, e, st) =>
                               Container(color: Colors.grey.shade900),
                         ),
                       ),
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.1),
-                                Colors.black.withOpacity(0.9),
-                              ],
-                              stops: const [0.4, 0.6, 1.0],
-                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Judul dan Info - di luar poster
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          s.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black87,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                            letterSpacing: -0.2,
+                            height: 1.3,
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: 12,
-                        right: 12,
-                        bottom: 12,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              s.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 14,
-                                letterSpacing: -0.3,
-                                height: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${s.episodesCount ?? 0} Episodes',
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 4),
+                        Text(
+                          '${s.episodesCount ?? 0} Episodes',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             );
           }, childCount: series.length),
