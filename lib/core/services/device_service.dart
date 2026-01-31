@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 class DeviceService {
@@ -13,7 +14,10 @@ class DeviceService {
 
     try {
       final deviceInfo = DeviceInfoPlugin();
-      if (Platform.isAndroid) {
+      if (kIsWeb) {
+        final webInfo = await deviceInfo.webBrowserInfo;
+        _deviceId = webInfo.userAgent ?? 'web_browser';
+      } else if (Platform.isAndroid) {
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id; // Unique ID on Android
       } else if (Platform.isIOS) {

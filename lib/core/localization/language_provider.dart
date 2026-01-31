@@ -18,8 +18,8 @@ class AppStrings {
       AppLanguage.en: 'Help Center',
     },
     'about_dracin': {
-      AppLanguage.id: 'Tentang Dracin',
-      AppLanguage.en: 'About Dracin',
+      AppLanguage.id: 'Tentang Kisah',
+      AppLanguage.en: 'About Kisah',
     },
     'edit_profile': {
       AppLanguage.id: 'Edit Profil',
@@ -111,11 +111,11 @@ class AppStrings {
     },
     'about_description': {
       AppLanguage.id:
-          'Dracin adalah platform streaming drama pilihan Anda yang menghadirkan konten terbaik dengan kualitas premium. Nikmati pengalaman menonton sinematik dengan koleksi drama yang terus diperbarui.',
+          'Kisah adalah platform streaming drama pilihan Anda yang menghadirkan konten terbaik dengan kualitas premium. Nikmati pengalaman menonton sinematik dengan koleksi drama yang terus diperbarui.',
       AppLanguage.en:
-          'Dracin is your go-to drama streaming platform bringing the best content with premium quality. Enjoy a cinematic viewing experience with a constantly updated collection of dramas.',
+          'Kisah is your go-to drama streaming platform bringing the best content with premium quality. Enjoy a cinematic viewing experience with a constantly updated collection of dramas.',
     },
-    'app_name': {AppLanguage.id: 'Dracin App', AppLanguage.en: 'Dracin App'},
+    'app_name': {AppLanguage.id: 'Kisah', AppLanguage.en: 'Kisah'},
     'company': {
       AppLanguage.id: 'Dikembangkan oleh KiSah Team',
       AppLanguage.en: 'Developed by KiSah Team',
@@ -218,8 +218,8 @@ class AppStrings {
       AppLanguage.en: 'Link copied to clipboard!',
     },
     'share_message': {
-      AppLanguage.id: 'Tonton {title} - Episode {episode} di Dracin App!',
-      AppLanguage.en: 'Watch {title} - Episode {episode} on Dracin App!',
+      AppLanguage.id: 'Tonton {title} - Episode {episode} di Kisah!',
+      AppLanguage.en: 'Watch {title} - Episode {episode} on Kisah!',
     },
   };
 

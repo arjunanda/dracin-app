@@ -21,23 +21,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scrollController = ScrollController();
   int _selectedCategoryIndex = 0;
 
-  List<String> _getCategories(AppLanguage lang) {
-    return [
-      AppStrings.get('trending', lang),
-      AppStrings.get('latest', lang),
-      AppStrings.get('recommended', lang),
-    ];
-  }
-
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 200) {
-        ref.read(seriesProvider.notifier).getSeries();
-      }
-    });
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final state = ref.read(seriesProvider);
+
+    if (state.isLoading) return;
+
+    final position = _scrollController.position;
+    if (!position.hasPixels) return;
+
+    if (position.pixels >= position.maxScrollExtent - 300) {
+      ref.read(seriesProvider.notifier).getSeries();
+    }
   }
 
   @override
@@ -45,7 +51,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final state = ref.watch(seriesProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = ref.watch(languageProvider);
-    final categories = _getCategories(lang);
 
     return Scaffold(
       backgroundColor: isDark
@@ -53,58 +58,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           : AppColors.lightBackground,
       body: Stack(
         children: [
-          // Background Blobs for Depth
-          if (isDark) ...[
-            Positioned(
-              top: -100,
-              right: -100,
-              child: _buildBlurBlob(AppColors.primary.withOpacity(0.1), 300),
-            ),
-            Positioned(
-              bottom: 100,
-              left: -100,
-              child: _buildBlurBlob(AppColors.accent.withOpacity(0.05), 250),
-            ),
-          ],
-
+          if (isDark) const _BackgroundBlobs(),
           CustomScrollView(
             controller: _scrollController,
             physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
             slivers: [
-              SliverAppBar(
-                floating: true,
-                title: Image.asset(
-                  'assets/logo.png',
-                  height: 50,
-                  fit: BoxFit.contain,
-                ),
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                centerTitle: false,
-                actions: [
-                  Container(
-                    margin: const EdgeInsets.only(right: 16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.black.withOpacity(0.05),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const SearchScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.search_rounded, size: 24),
-                    ),
-                  ),
-                ],
-              ),
+              _buildAppBar(isDark),
               CupertinoSliverRefreshControl(
                 onRefresh: () => ref
                     .read(seriesProvider.notifier)
@@ -115,12 +76,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
               ),
               SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCategorySelector(isDark, categories),
-                    const SizedBox(height: 8),
-                  ],
+                child: _CategorySelector(
+                  selectedIndex: _selectedCategoryIndex,
+                  onCategoryChanged: (index, type, categoryId) {
+                    setState(() => _selectedCategoryIndex = index);
+                    ref
+                        .read(seriesProvider.notifier)
+                        .getSeries(
+                          refresh: true,
+                          type: type,
+                          categoryId: categoryId,
+                        );
+                  },
                 ),
               ),
               ..._buildSelectedSection(context, state, lang),
@@ -131,96 +98,200 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildCategorySelector(bool isDark, List<String> staticCategories) {
+  Widget _buildAppBar(bool isDark) {
+    return SliverAppBar(
+      floating: true,
+      title: Image.asset('assets/logo.png', height: 50, fit: BoxFit.contain),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: false,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: CircleAvatar(
+            backgroundColor: isDark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.black.withOpacity(0.05),
+            child: IconButton(
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SearchScreen())),
+              icon: const Icon(Icons.search_rounded, size: 24),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildSelectedSection(
+    BuildContext context,
+    SeriesListState state,
+    AppLanguage lang,
+  ) {
+    if (state.isLoading && state.series.isEmpty) {
+      return [
+        const SliverFillRemaining(
+          child: Center(child: CupertinoActivityIndicator()),
+        ),
+      ];
+    }
+
+    if (!state.isLoading && state.series.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _EmptyState(lang: lang),
+        ),
+      ];
+    }
+
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.55,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 24,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => _SeriesCard(series: state.series[index]),
+            childCount: state.series.length,
+          ),
+        ),
+      ),
+      if (state.isLoading)
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(child: CupertinoActivityIndicator()),
+          ),
+        ),
+    ];
+  }
+}
+
+class _BackgroundBlobs extends StatelessWidget {
+  const _BackgroundBlobs();
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -100,
+            right: -100,
+            child: _BlurBlob(
+              color: AppColors.primary.withOpacity(0.1),
+              size: 300,
+            ),
+          ),
+          Positioned(
+            bottom: 100,
+            left: -100,
+            child: _BlurBlob(
+              color: AppColors.accent.withOpacity(0.05),
+              size: 250,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BlurBlob extends StatelessWidget {
+  final Color color;
+  final double size;
+  const _BlurBlob({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: const SizedBox.shrink(),
+      ),
+    );
+  }
+}
+
+class _CategorySelector extends ConsumerWidget {
+  final int selectedIndex;
+  final void Function(int, String?, String?) onCategoryChanged;
+
+  const _CategorySelector({
+    required this.selectedIndex,
+    required this.onCategoryChanged,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final staticCategories = [
+      AppStrings.get('trending', lang),
+      AppStrings.get('latest', lang),
+      AppStrings.get('recommended', lang),
+    ];
 
     return categoriesAsync.when(
       data: (categories) {
-        final allCategories = [
+        final allNames = [
           ...staticCategories,
           ...categories.map((c) => c.name),
         ];
-
-        return Container(
-          height: 42,
-          margin: const EdgeInsets.symmetric(vertical: 12),
+        return SizedBox(
+          height: 66,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: allCategories.length,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: allNames.length,
             itemBuilder: (context, index) {
-              final isSelected = _selectedCategoryIndex == index;
-              final categoryName = allCategories[index];
-
+              final isSelected = selectedIndex == index;
               return GestureDetector(
                 onTap: () {
-                  if (_selectedCategoryIndex == index) return;
-
-                  setState(() {
-                    _selectedCategoryIndex = index;
-                  });
-
-                  // Trigger API call based on selection
+                  if (isSelected) return;
+                  String? type;
+                  String? categoryId;
                   if (index < staticCategories.length) {
-                    // It's a static type (Trending, Latest, etc)
-                    String type = 'popular';
-                    if (index == 1) type = 'newest';
-                    if (index == 2) type = 'recommended';
-
-                    ref
-                        .read(seriesProvider.notifier)
-                        .getSeries(refresh: true, type: type);
+                    type = index == 0
+                        ? 'popular'
+                        : (index == 1 ? 'newest' : 'recommended');
                   } else {
-                    // It's a dynamic category from API
-                    final categoryIndex = index - staticCategories.length;
-                    final categoryId = categories[categoryIndex].id;
-
-                    ref
-                        .read(seriesProvider.notifier)
-                        .getSeries(refresh: true, categoryId: categoryId);
+                    categoryId = categories[index - staticCategories.length].id;
                   }
+                  onCategoryChanged(index, type, categoryId);
                 },
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
+                  duration: const Duration(milliseconds: 200),
                   margin: const EdgeInsets.only(right: 10),
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primary
-                        : (isDark
-                              ? Colors.white.withOpacity(0.05)
-                              : Colors.black.withOpacity(0.05)),
+                        : (isDark ? Colors.white10 : Colors.black12),
                     borderRadius: BorderRadius.circular(25),
-                    border: Border.all(
-                      color: isSelected
-                          ? Colors.white.withOpacity(0.2)
-                          : Colors.transparent,
-                      width: 1,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : [],
                   ),
                   child: Text(
-                    categoryName,
+                    allNames[index],
                     style: TextStyle(
                       color: isSelected
                           ? Colors.white
-                          : (isDark
-                                ? AppColors.darkTextSecondary.withOpacity(0.8)
-                                : AppColors.lightTextSecondary),
+                          : (isDark ? Colors.white70 : Colors.black87),
                       fontWeight: isSelected
-                          ? FontWeight.w700
+                          ? FontWeight.bold
                           : FontWeight.w500,
                       fontSize: 13,
-                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
@@ -233,170 +304,100 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         height: 66,
         child: Center(child: CupertinoActivityIndicator()),
       ),
-      error: (err, stack) => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
+}
 
-  List<Widget> _buildSelectedSection(
-    BuildContext context,
-    SeriesListState state,
-    AppLanguage lang,
-  ) {
-    if (state.isLoading && state.series.isEmpty) {
-      return [
-        const SliverToBoxAdapter(
-          child: SizedBox(
-            height: 400,
-            child: Center(child: CupertinoActivityIndicator()),
+class _SeriesCard extends StatelessWidget {
+  final dynamic series;
+  const _SeriesCard({required this.series});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => SeriesShortsScreen(
+            seriesId: series.id,
+            title: series.title,
+            bannerUrl: series.bannerUrl,
+            showBackButton: true,
           ),
         ),
-      ];
-    }
-
-    if (!state.isLoading && state.series.isEmpty) {
-      return [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.movie_filter_rounded,
-                  size: 80,
-                  color: Colors.grey.withOpacity(0.3),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  AppStrings.get('no_content_found', lang),
-                  style: TextStyle(
-                    color: Colors.grey.withOpacity(0.8),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                series.bannerUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                // Optimization: Cache size to reduce memory usage
+                cacheWidth: 400,
+                errorBuilder: (_, __, ___) =>
+                    Container(color: Colors.grey.shade900),
+              ),
             ),
           ),
-        ),
-      ];
-    }
-
-    final series = state.series;
-
-    return [
-      SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-        sliver: SliverGrid(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.55,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 24,
-          ),
-          delegate: SliverChildBuilderDelegate((context, index) {
-            final s = series[index % series.length];
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-
-            return GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => SeriesShortsScreen(
-                      seriesId: s.id,
-                      title: s.title,
-                      bannerUrl: s.bannerUrl,
-                      showBackButton: true,
-                    ),
-                  ),
-                );
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Poster Image - tanpa teks di dalamnya
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.25),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.network(
-                          s.bannerUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (c, e, st) =>
-                              Container(color: Colors.grey.shade900),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Judul dan Info - di luar poster
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          s.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black87,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13.5,
-                            letterSpacing: -0.2,
-                            height: 1.3,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${s.episodesCount ?? 0} Episodes',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 38, // Height for exactly 2 lines of text
+            child: Text(
+              series.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                height: 1.3, // Consistent line height
               ),
-            );
-          }, childCount: series.length),
-        ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${series.episodesCount ?? 0} Episodes',
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
-      if (ref.watch(seriesProvider).isLoading && series.isNotEmpty)
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(child: CupertinoActivityIndicator()),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final AppLanguage lang;
+  const _EmptyState({required this.lang});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.movie_filter_rounded,
+          size: 80,
+          color: Colors.grey.withOpacity(0.3),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          AppStrings.get('no_content_found', lang),
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
           ),
         ),
-    ];
-  }
-
-  Widget _buildBlurBlob(Color color, double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-        child: Container(color: Colors.transparent),
-      ),
+      ],
     );
   }
 }

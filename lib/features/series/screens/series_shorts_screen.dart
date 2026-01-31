@@ -16,6 +16,7 @@ import '../../auth/screens/login_screen.dart';
 import '../../../core/utils/share_utils.dart';
 import '../../home/providers/series_provider.dart';
 import '../../watchlist/providers/watchlist_provider.dart';
+import '../../../core/widgets/premium_upgrade_dialog.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
@@ -58,6 +59,26 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
 
     // Force refresh episodes to get new HLS URLs
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final episodes = widget.seriesId == 'fyp'
+          ? ref.read(fypEpisodesProvider)
+          : ref.read(episodesProvider(widget.seriesId));
+
+      if (episodes.isNotEmpty && widget.initialIndex < episodes.length) {
+        final episode = episodes[widget.initialIndex];
+        final user = ref.read(authProvider).user;
+        final isUserPremium = user?.isPremium ?? false;
+
+        if (episode.isPremium && !isUserPremium) {
+          if (mounted) {
+            Navigator.pop(context);
+            showDialog(
+              context: context,
+              builder: (context) => const PremiumUpgradeDialog(),
+            );
+          }
+        }
+      }
+
       if (widget.seriesId == 'fyp') {
         ref.invalidate(fypEpisodesProvider);
       } else {
@@ -107,6 +128,22 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                     controller: _pageController,
                     itemCount: episodes.length,
                     onPageChanged: (index) async {
+                      final episode = episodes[index];
+                      final user = ref.read(authProvider).user;
+                      final isUserPremium = user?.isPremium ?? false;
+
+                      if (episode.isPremium && !isUserPremium) {
+                        _pageController.previousPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                        showDialog(
+                          context: context,
+                          builder: (context) => const PremiumUpgradeDialog(),
+                        );
+                        return;
+                      }
+
                       _adManager.recordScroll(index);
 
                       // Load more logic for FYP

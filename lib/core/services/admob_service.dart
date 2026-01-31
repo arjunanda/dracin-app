@@ -31,6 +31,7 @@ class AdMobService {
 
   /// Get the appropriate ad unit ID based on platform
   String get rewardedAdUnitId {
+    if (kIsWeb) return '';
     if (Platform.isAndroid) {
       return _testRewardedAndroid;
     } else if (Platform.isIOS) {
@@ -40,6 +41,7 @@ class AdMobService {
   }
 
   String get interstitialAdUnitId {
+    if (kIsWeb) return '';
     if (Platform.isAndroid) {
       return _testInterstitialAndroid;
     } else if (Platform.isIOS) {
@@ -50,6 +52,10 @@ class AdMobService {
 
   /// Initialize AdMob
   static Future<void> initialize() async {
+    if (kIsWeb) {
+      debugPrint('🌐 AdMob: Skipping initialization on Web');
+      return;
+    }
     await MobileAds.instance.initialize();
     debugPrint('📱 AdMob: Initialized');
   }

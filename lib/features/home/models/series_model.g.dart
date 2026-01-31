@@ -9,8 +9,8 @@ part of 'series_model.dart';
 Series _$SeriesFromJson(Map<String, dynamic> json) => Series(
   id: json['id'] as String,
   title: json['title'] as String,
-  description: json['description'] as String,
-  bannerUrl: json['banner_url'] as String,
+  description: json['description'] as String? ?? '',
+  bannerUrl: json['banner_url'] as String? ?? '',
   episodesCount: (json['episodes_count'] as num?)?.toInt(),
   watchedEpisodesCount: (json['watched_episodes_count'] as num?)?.toInt(),
   isLoved: json['isLoved'] as bool? ?? false,

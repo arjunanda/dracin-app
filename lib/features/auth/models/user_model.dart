@@ -8,12 +8,15 @@ class User {
   final String email;
   final String name;
   final String? avatar;
+  @JsonKey(name: 'is_premium', defaultValue: false)
+  final bool isPremium;
 
   User({
     required this.id,
     required this.email,
     required this.name,
     this.avatar,
+    this.isPremium = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
