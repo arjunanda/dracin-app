@@ -14,6 +14,13 @@ class PaymentService {
   Stream<PurchaseDetails> get purchaseStream => _purchaseController.stream;
 
   Future<void> initialize() async {
+    if (kDebugMode) {
+      debugPrint(
+        'PaymentService: Skipping billing initialization in debug mode',
+      );
+      return;
+    }
+
     final bool available = await _inAppPurchase.isAvailable();
     if (!available) {
       debugPrint('In-app purchases not available');

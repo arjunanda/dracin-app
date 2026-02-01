@@ -69,6 +69,8 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
   bool _isAutoQuality = true; // Auto quality mode by default
   String _detectedQuality = 'Auto'; // Current detected quality
   bool _isSwitchingQuality = false; // Flag to prevent multiple initializations
+  bool _isDragging = false;
+  double _dragValue = 0.0;
 
   @override
   void initState() {
@@ -500,30 +502,33 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
 
           // Subtitles
           if (_selectedSubtitleIndex != -1 && _currentSubtitleText != null)
-            Positioned(
-              bottom: 120,
-              left: 20,
-              right: 20,
-              child: Text(
-                _currentSubtitleText!,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  height: 1.4,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withOpacity(0.9),
-                      blurRadius: 8,
-                      offset: const Offset(0, 0),
+            Positioned.fill(
+              child: Align(
+                alignment: const Alignment(0, 0.1),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    _currentSubtitleText!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      height: 1.4,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.9),
+                          blurRadius: 8,
+                          offset: const Offset(0, 0),
+                        ),
+                        Shadow(
+                          color: Colors.black.withOpacity(0.9),
+                          blurRadius: 4,
+                          offset: const Offset(2, 2),
+                        ),
+                      ],
                     ),
-                    Shadow(
-                      color: Colors.black.withOpacity(0.9),
-                      blurRadius: 4,
-                      offset: const Offset(2, 2),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -711,18 +716,22 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
   }
 
   Widget _buildProgressBar() {
-    return StreamBuilder(
-      stream: Stream.periodic(const Duration(milliseconds: 100)),
-      builder: (context, snapshot) {
-        if (_controller == null || !_isInitialized) {
-          return const SizedBox.shrink();
-        }
+    if (_controller == null) return const SizedBox.shrink();
 
-        final position = _controller!.value.position;
-        final duration = _controller!.value.duration;
-        final progress = duration.inMilliseconds > 0
-            ? position.inMilliseconds / duration.inMilliseconds
-            : 0.0;
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: _controller!,
+      builder: (context, value, child) {
+        if (!value.isInitialized) return const SizedBox.shrink();
+
+        final duration = value.duration;
+        // Gunakan posisi dari controller atau nilai drag jika sedang dragging
+        final position = _isDragging ? duration * _dragValue : value.position;
+
+        final progress = _isDragging
+            ? _dragValue
+            : (duration.inMilliseconds > 0
+                  ? position.inMilliseconds / duration.inMilliseconds
+                  : 0.0);
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -755,10 +764,19 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
               ),
               child: Slider(
                 value: progress.clamp(0.0, 1.0),
-                onChanged: (value) {
-                  final newPosition = duration * value;
-                  _controller!.seekTo(newPosition);
+                onChanged: (val) {
+                  setState(() {
+                    _isDragging = true;
+                    _dragValue = val;
+                  });
                   _resetHideTimer();
+                },
+                onChangeEnd: (val) {
+                  final newPosition = duration * val;
+                  _controller!.seekTo(newPosition);
+                  setState(() {
+                    _isDragging = false;
+                  });
                 },
               ),
             ),

@@ -50,6 +50,13 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
   final AdMobService _adMobService = AdMobService();
   final ShortsAdManager _adManager = ShortsAdManager();
   bool _isLoadingAd = false;
+  final ValueNotifier<bool> _isBottomSheetOpenNotifier = ValueNotifier<bool>(
+    false,
+  );
+  final ValueNotifier<bool> _isPremiumDialogOpenNotifier = ValueNotifier<bool>(
+    false,
+  );
+  DateTime? _lastPremiumPopupTime;
 
   @override
   void initState() {
@@ -70,11 +77,23 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
 
         if (episode.isPremium && !isUserPremium) {
           if (mounted) {
-            Navigator.pop(context);
-            showDialog(
-              context: context,
-              builder: (context) => const PremiumUpgradeDialog(),
-            );
+            final now = DateTime.now();
+            final canShowPopup =
+                _lastPremiumPopupTime == null ||
+                now.difference(_lastPremiumPopupTime!) >
+                    const Duration(seconds: 2);
+
+            if (canShowPopup && !_isPremiumDialogOpenNotifier.value) {
+              _lastPremiumPopupTime = now;
+              _isPremiumDialogOpenNotifier.value = true;
+              showDialog(
+                context: context,
+                barrierDismissible: true,
+                builder: (context) => const PremiumUpgradeDialog(),
+              ).then((_) {
+                _isPremiumDialogOpenNotifier.value = false;
+              });
+            }
           }
         }
       }
@@ -98,6 +117,8 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
     _currentIndexNotifier.dispose();
     _isAdShowingNotifier.dispose();
     _showControlsNotifier.dispose();
+    _isBottomSheetOpenNotifier.dispose();
+    _isPremiumDialogOpenNotifier.dispose();
     super.dispose();
   }
 
@@ -137,10 +158,25 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
                         );
-                        showDialog(
-                          context: context,
-                          builder: (context) => const PremiumUpgradeDialog(),
-                        );
+
+                        final now = DateTime.now();
+                        final canShowPopup =
+                            _lastPremiumPopupTime == null ||
+                            now.difference(_lastPremiumPopupTime!) >
+                                const Duration(seconds: 2);
+
+                        if (canShowPopup &&
+                            !_isPremiumDialogOpenNotifier.value) {
+                          _lastPremiumPopupTime = now;
+                          _isPremiumDialogOpenNotifier.value = true;
+                          showDialog(
+                            context: context,
+                            barrierDismissible: true,
+                            builder: (context) => const PremiumUpgradeDialog(),
+                          ).then((_) {
+                            _isPremiumDialogOpenNotifier.value = false;
+                          });
+                        }
                         return;
                       }
 
@@ -181,62 +217,93 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                           return ValueListenableBuilder<bool>(
                             valueListenable: _isAdShowingNotifier,
                             builder: (context, isAdShowing, _) {
-                              return _ShortVideoItem(
-                                key: ValueKey(episode.id),
-                                episode: episode,
-                                shouldPlay:
-                                    index == currentIndex && !isAdShowing,
-                                shouldLoad:
-                                    index == currentIndex ||
-                                    index == currentIndex + 1,
-                                totalEpisodes: episodes.length,
-                                seriesId: widget.seriesId,
-                                seriesTitle: widget.title,
-                                bannerUrl: widget.bannerUrl,
-                                onLike: () {
-                                  if (isFyp) {
-                                    ref
-                                        .read(fypEpisodesProvider.notifier)
-                                        .toggleLike(episode.id);
-                                  } else {
-                                    ref
-                                        .read(
-                                          episodesProvider(
-                                            widget.seriesId,
-                                          ).notifier,
-                                        )
-                                        .toggleLike(episode.id);
-                                  }
+                              return ValueListenableBuilder<bool>(
+                                valueListenable: _isBottomSheetOpenNotifier,
+                                builder: (context, isBottomSheetOpen, _) {
+                                  return ValueListenableBuilder<bool>(
+                                    valueListenable:
+                                        _isPremiumDialogOpenNotifier,
+                                    builder: (context, isPremiumDialogOpen, _) {
+                                      return _ShortVideoItem(
+                                        key: ValueKey(episode.id),
+                                        episode: episode,
+                                        shouldPlay:
+                                            index == currentIndex &&
+                                            !isAdShowing &&
+                                            !isBottomSheetOpen &&
+                                            !isPremiumDialogOpen,
+                                        shouldLoad:
+                                            index == currentIndex ||
+                                            index == currentIndex + 1,
+                                        totalEpisodes: episodes.length,
+                                        seriesId: widget.seriesId,
+                                        seriesTitle: widget.title,
+                                        bannerUrl: widget.bannerUrl,
+                                        onLike: () {
+                                          if (isFyp) {
+                                            ref
+                                                .read(
+                                                  fypEpisodesProvider.notifier,
+                                                )
+                                                .toggleLike(episode.id);
+                                          } else {
+                                            ref
+                                                .read(
+                                                  episodesProvider(
+                                                    widget.seriesId,
+                                                  ).notifier,
+                                                )
+                                                .toggleLike(episode.id);
+                                          }
+                                        },
+                                        onView: () async {
+                                          final deviceId = await DeviceService()
+                                              .getDeviceId();
+                                          if (isFyp) {
+                                            ref
+                                                .read(
+                                                  fypEpisodesProvider.notifier,
+                                                )
+                                                .recordView(
+                                                  episode.id,
+                                                  deviceId,
+                                                );
+                                            ref
+                                                .read(
+                                                  fypEpisodesProvider.notifier,
+                                                )
+                                                .refreshLikeStatus(episode.id);
+                                          } else {
+                                            ref
+                                                .read(
+                                                  episodesProvider(
+                                                    widget.seriesId,
+                                                  ).notifier,
+                                                )
+                                                .recordView(
+                                                  episode.id,
+                                                  deviceId,
+                                                );
+                                            ref
+                                                .read(
+                                                  episodesProvider(
+                                                    widget.seriesId,
+                                                  ).notifier,
+                                                )
+                                                .refreshLikeStatus(episode.id);
+                                          }
+                                        },
+                                        pageController: _pageController,
+                                        showControlsNotifier:
+                                            _showControlsNotifier,
+                                        isBottomSheetOpenNotifier:
+                                            _isBottomSheetOpenNotifier,
+                                        isPremiumDialogOpenNotifier:
+                                            _isPremiumDialogOpenNotifier,
+                                      );
+                                    },
+                                  );
                                 },
-                                onView: () async {
-                                  final deviceId = await DeviceService()
-                                      .getDeviceId();
-                                  if (isFyp) {
-                                    ref
-                                        .read(fypEpisodesProvider.notifier)
-                                        .recordView(episode.id, deviceId);
-                                    ref
-                                        .read(fypEpisodesProvider.notifier)
-                                        .refreshLikeStatus(episode.id);
-                                  } else {
-                                    ref
-                                        .read(
-                                          episodesProvider(
-                                            widget.seriesId,
-                                          ).notifier,
-                                        )
-                                        .recordView(episode.id, deviceId);
-                                    ref
-                                        .read(
-                                          episodesProvider(
-                                            widget.seriesId,
-                                          ).notifier,
-                                        )
-                                        .refreshLikeStatus(episode.id);
-                                  }
-                                },
-                                pageController: _pageController,
-                                showControlsNotifier: _showControlsNotifier,
                               );
                             },
                           );
@@ -354,6 +421,8 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
   final VoidCallback onView;
   final PageController pageController;
   final ValueNotifier<bool> showControlsNotifier;
+  final ValueNotifier<bool> isBottomSheetOpenNotifier;
+  final ValueNotifier<bool> isPremiumDialogOpenNotifier;
 
   const _ShortVideoItem({
     super.key,
@@ -368,6 +437,8 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
     required this.onView,
     required this.pageController,
     required this.showControlsNotifier,
+    required this.isBottomSheetOpenNotifier,
+    required this.isPremiumDialogOpenNotifier,
   });
 
   @override
@@ -388,6 +459,8 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
 
   bool? _localIsLoved;
   bool _showOverlays = false;
+  DateTime? _lastPremiumPopupTime;
+  late ValueNotifier<bool> _isPremiumDialogOpenNotifier;
 
   @override
   void initState() {
@@ -403,6 +476,8 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
         ]).animate(
           CurvedAnimation(parent: _likeController, curve: Curves.easeInOut),
         );
+
+    _isPremiumDialogOpenNotifier = widget.isPremiumDialogOpenNotifier;
 
     if (widget.shouldPlay) {
       widget.onView();
@@ -945,6 +1020,7 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
     PageController pageController,
     int totalEpisodes,
   ) {
+    widget.isBottomSheetOpenNotifier.value = true;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1059,80 +1135,148 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
               const Divider(color: Colors.white10, height: 1),
               // Episode Grid
               Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(20),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                  ),
-                  itemCount:
-                      widget.episode.episodesCount ?? widget.totalEpisodes,
-                  itemBuilder: (context, index) {
-                    final isCurrent = widget.episode.episodeNumber == index + 1;
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                        if (widget.seriesId == 'fyp') {
-                          // If in FYP, navigate to the specific drama's shorts screen
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => SeriesShortsScreen(
-                                seriesId: widget.episode.seriesId,
-                                title:
-                                    widget.episode.seriesTitle ??
-                                    widget.seriesTitle,
-                                bannerUrl:
-                                    widget.episode.seriesBannerUrl ??
-                                    widget.bannerUrl,
-                                showBackButton: true,
-                                initialIndex: index,
-                              ),
-                            ),
-                          );
-                        } else {
-                          pageController.animateToPage(
-                            index,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        }
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isCurrent
-                                ? AppColors.accent
-                                : Colors.white.withOpacity(0.1),
-                            width: isCurrent ? 2 : 1,
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final episodes = ref.watch(
+                      episodesProvider(widget.episode.seriesId),
+                    );
+
+                    final itemCount = episodes.isNotEmpty
+                        ? episodes.length
+                        : (widget.episode.episodesCount ??
+                              widget.totalEpisodes);
+
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(20),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 5,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
                           ),
-                          boxShadow: isCurrent
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.accent.withOpacity(0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
+                      itemCount: itemCount,
+                      itemBuilder: (context, index) {
+                        final ep = episodes.isNotEmpty ? episodes[index] : null;
+                        final isCurrent = ep != null
+                            ? widget.episode.episodeNumber == ep.episodeNumber
+                            : widget.episode.episodeNumber == index + 1;
+                        final isPremium = ep?.isPremium ?? false;
+
+                        return GestureDetector(
+                          onTap: () {
+                            final user = ref.read(authProvider).user;
+                            final isUserPremium = user?.isPremium ?? false;
+
+                            if (isPremium && !isUserPremium) {
+                              Navigator.pop(context);
+                              final now = DateTime.now();
+                              final canShowPopup =
+                                  _lastPremiumPopupTime == null ||
+                                  now.difference(_lastPremiumPopupTime!) >
+                                      const Duration(seconds: 2);
+
+                              if (canShowPopup &&
+                                  !_isPremiumDialogOpenNotifier.value) {
+                                _lastPremiumPopupTime = now;
+                                _isPremiumDialogOpenNotifier.value = true;
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: true,
+                                  builder: (context) =>
+                                      const PremiumUpgradeDialog(),
+                                ).then((_) {
+                                  _isPremiumDialogOpenNotifier.value = false;
+                                });
+                              }
+                              return;
+                            }
+
+                            Navigator.pop(context);
+                            if (widget.seriesId == 'fyp') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SeriesShortsScreen(
+                                    seriesId: widget.episode.seriesId,
+                                    title:
+                                        widget.episode.seriesTitle ??
+                                        widget.seriesTitle,
+                                    bannerUrl:
+                                        widget.episode.seriesBannerUrl ??
+                                        widget.bannerUrl,
+                                    showBackButton: true,
+                                    initialIndex: index,
                                   ),
-                                ]
-                              : null,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '${index + 1}',
-                          style: TextStyle(
-                            color: isCurrent
-                                ? AppColors.accent
-                                : Colors.white70,
-                            fontWeight: isCurrent
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 16,
+                                ),
+                              );
+                            } else {
+                              pageController.animateToPage(
+                                index,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            }
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isCurrent
+                                    ? AppColors.accent
+                                    : (isPremium
+                                          ? Colors.amber.withOpacity(0.5)
+                                          : Colors.white.withOpacity(0.1)),
+                                width: isCurrent ? 2 : 1,
+                              ),
+                              boxShadow: isCurrent || isPremium
+                                  ? [
+                                      BoxShadow(
+                                        color:
+                                            (isCurrent
+                                                    ? AppColors.accent
+                                                    : Colors.amber)
+                                                .withOpacity(0.2),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            alignment: Alignment.center,
+                            child: Stack(
+                              children: [
+                                Center(
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: TextStyle(
+                                      color: isCurrent
+                                          ? AppColors.accent
+                                          : (isPremium
+                                                ? Colors.amber
+                                                : Colors.white70),
+                                      fontWeight: isCurrent || isPremium
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                if (isPremium)
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: const Icon(
+                                      Icons.workspace_premium,
+                                      size: 10,
+                                      color: Colors.amber,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -1141,7 +1285,9 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
           ),
         );
       },
-    );
+    ).then((_) {
+      widget.isBottomSheetOpenNotifier.value = false;
+    });
   }
 
   Widget _buildSideAction({
