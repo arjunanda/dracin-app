@@ -18,6 +18,7 @@ Series _$SeriesFromJson(Map<String, dynamic> json) => Series(
       ? null
       : Category.fromJson(json['category'] as Map<String, dynamic>),
   status: json['status'] as String?,
+  lastWatchedEpisodeId: json['last_watched_episode_id'] as String?,
 );
 
 Map<String, dynamic> _$SeriesToJson(Series instance) => <String, dynamic>{
@@ -30,4 +31,5 @@ Map<String, dynamic> _$SeriesToJson(Series instance) => <String, dynamic>{
   'isLoved': instance.isLoved,
   'category': instance.category,
   'status': instance.status,
+  'last_watched_episode_id': instance.lastWatchedEpisodeId,
 };

@@ -65,6 +65,8 @@ class Episode {
   final String? seriesName;
   @JsonKey(name: 'is_premium', defaultValue: false)
   final bool isPremium;
+  @JsonKey(name: 'is_watched', defaultValue: false)
+  final bool isWatched;
 
   Episode({
     required this.id,
@@ -85,6 +87,7 @@ class Episode {
     this.seriesBannerUrl,
     this.seriesName,
     this.isPremium = false,
+    this.isWatched = false,
   });
 
   String get effectiveSeriesTitle => seriesName ?? seriesTitle ?? '';
@@ -108,6 +111,7 @@ class Episode {
     String? seriesBannerUrl,
     String? seriesName,
     bool? isPremium,
+    bool? isWatched,
   }) {
     return Episode(
       id: id ?? this.id,
@@ -128,6 +132,7 @@ class Episode {
       seriesBannerUrl: seriesBannerUrl ?? this.seriesBannerUrl,
       seriesName: seriesName ?? this.seriesName,
       isPremium: isPremium ?? this.isPremium,
+      isWatched: isWatched ?? this.isWatched,
     );
   }
 

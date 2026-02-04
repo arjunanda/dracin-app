@@ -18,6 +18,8 @@ class Series {
   final bool isLoved;
   final Category? category;
   final String? status;
+  @JsonKey(name: 'last_watched_episode_id')
+  final String? lastWatchedEpisodeId;
 
   Series({
     required this.id,
@@ -29,6 +31,7 @@ class Series {
     this.isLoved = false,
     this.category,
     this.status,
+    this.lastWatchedEpisodeId,
   });
 
   factory Series.fromJson(Map<String, dynamic> json) => _$SeriesFromJson(json);

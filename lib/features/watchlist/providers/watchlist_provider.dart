@@ -39,12 +39,23 @@ class WatchlistNotifier extends StateNotifier<AsyncValue<List<WatchlistItem>>> {
 
   Future<void> loadWatchlist() async {
     state = const AsyncValue.loading();
+    debugPrint('DEBUG_WATCHLIST: Loading watchlist data...');
     try {
       final response = await _service.getWatchlist();
-      state = AsyncValue.data(response.data ?? []);
+      final items = response.data ?? [];
 
-      debugPrint(response.data.toString());
+      debugPrint('DEBUG_WATCHLIST: Success! Received ${items} items');
+      for (var item in items) {
+        debugPrint(
+          'DEBUG_WATCHLIST_ITEM: Title: ${item.series.title}, ID: ${item.series.watchedEpisodesCount}',
+        );
+      }
+
+      if (!mounted) return;
+      state = AsyncValue.data(items);
     } catch (e, stack) {
+      debugPrint('DEBUG_WATCHLIST: Error loading watchlist: $e');
+      if (!mounted) return;
       state = AsyncValue.error(e, stack);
     }
   }
@@ -61,6 +72,7 @@ class WatchlistNotifier extends StateNotifier<AsyncValue<List<WatchlistItem>>> {
   Future<void> removeFromWatchlist(String seriesId) async {
     try {
       await _service.removeFromWatchlist(seriesId);
+      if (!mounted) return;
       state.whenData((list) {
         state = AsyncValue.data(
           list.where((item) => item.seriesId != seriesId).toList(),

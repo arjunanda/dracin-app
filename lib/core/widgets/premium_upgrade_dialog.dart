@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../services/payment_service.dart';
+import '../network/api_client.dart';
 import '../../features/auth/providers/auth_provider.dart';
+import '../../features/auth/screens/login_screen.dart';
 
 class PremiumUpgradeDialog extends ConsumerWidget {
-  const PremiumUpgradeDialog({super.key});
+  final Function(bool)? onPaymentProcessing;
+  final VoidCallback? onPaymentSuccess;
+
+  const PremiumUpgradeDialog({
+    super.key,
+    this.onPaymentProcessing,
+    this.onPaymentSuccess,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -116,14 +125,9 @@ class PremiumUpgradeDialog extends ConsumerWidget {
                         flex: 2,
                         child: ElevatedButton(
                           onPressed: () async {
-                            // Call Payment Service
                             final authState = ref.read(authProvider);
-                            final authNotifier = ref.read(
-                              authProvider.notifier,
-                            );
 
                             if (authState.status != AuthStatus.authenticated) {
-                              Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -131,30 +135,60 @@ class PremiumUpgradeDialog extends ConsumerWidget {
                                   ),
                                 ),
                               );
-                              // Trigger generic sign in (e.g. Google Sign In)
-                              authNotifier.signInWithGoogle();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginScreen(),
+                                ),
+                              );
                               return;
                             }
 
-                            await PaymentService().buyPremium();
+                            // Start payment processing
+                            onPaymentProcessing?.call(true);
 
-                            // For simulation since we don't have real Google Play IDs
-                            // In production, we should listen to the purchase stream.
-                            // Here we just simulate a success for the user to see the flow.
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Pembayaran sedang diproses...',
-                                  ),
-                                ),
+                            try {
+                              final dio = ref.read(apiClientProvider);
+                              final success = await PaymentService().buyPremium(
+                                dio,
                               );
 
-                              // Simulate backend delay then refresh
-                              await Future.delayed(const Duration(seconds: 2));
-                              authNotifier
-                                  .refreshUser(); // Verify with backend in bg
+                              if (success && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Pembayaran berhasil dikonfirmasi!',
+                                    ),
+                                  ),
+                                );
+
+                                // Close dialog after success
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                }
+
+                                // Call success callback (refresh user & show success popup)
+                                onPaymentSuccess?.call();
+                              } else if (!success && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Pembayaran dibatalkan atau gagal',
+                                    ),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Pembayaran gagal: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } finally {
+                              // Stop payment processing
+                              onPaymentProcessing?.call(false);
                             }
                           },
                           style: ElevatedButton.styleFrom(

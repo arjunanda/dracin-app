@@ -1,30 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../series/models/episode_model.dart';
 import '../../../core/widgets/custom_video_player.dart';
+import '../../../core/network/ad_service.dart';
 
-class PlayerScreen extends StatefulWidget {
+class PlayerScreen extends ConsumerStatefulWidget {
   final Episode episode;
 
   const PlayerScreen({super.key, required this.episode});
 
   @override
-  State<PlayerScreen> createState() => _PlayerScreenState();
+  ConsumerState<PlayerScreen> createState() => _PlayerScreenState();
 }
 
-class _PlayerScreenState extends State<PlayerScreen> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
+class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   @override
   Widget build(BuildContext context) {
+    final isAnyAdShowing = ref.watch(isAnyAdShowingProvider);
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -40,7 +34,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
               subtitles: widget.episode.subtitles
                   .map((s) => SubtitleSource(label: s.lang, url: s.file))
                   .toList(),
-              autoPlay: true,
+              autoPlay: !isAnyAdShowing,
               aspectRatio: 16 / 9,
             ),
           ),

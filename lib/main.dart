@@ -7,6 +7,7 @@ import 'core/theme/theme_provider.dart';
 import 'features/splash/screens/splash_screen.dart';
 import 'core/services/admob_service.dart';
 import 'core/services/payment_service.dart';
+import 'core/utils/route_utils.dart';
 
 void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,7 @@ class MyApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      navigatorObservers: [routeObserver],
       home: const SplashScreen(),
     );
   }

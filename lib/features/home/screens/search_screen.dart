@@ -8,6 +8,7 @@ import '../models/series_model.dart';
 import '../providers/series_provider.dart';
 import '../providers/category_provider.dart';
 import '../../series/screens/series_shorts_screen.dart';
+import '../../../core/network/ad_service.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -26,6 +27,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     'Squid Game',
     'All of Us Are Dead',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(adServiceProvider).showTimedAd(ref);
+      }
+    });
+  }
 
   @override
   void dispose() {

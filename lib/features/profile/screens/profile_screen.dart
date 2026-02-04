@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/localization/language_provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/screens/login_screen.dart';
 import './setting/setting_screen.dart';
@@ -107,16 +108,72 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (isLoggedIn) ...[
-                                Text(
-                                  user?.name ??
-                                      (lang == AppLanguage.id
-                                          ? 'Pengguna'
-                                          : 'User'),
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -0.5,
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        user?.name ??
+                                            (lang == AppLanguage.id
+                                                ? 'Pengguna'
+                                                : 'User'),
+                                        style: const TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: -0.5,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (user?.isPremium ?? false)
+                                      Container(
+                                        margin: const EdgeInsets.only(left: 8),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              Color(0xFFFFD700),
+                                              Color(0xFFFFA500),
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.amber.withOpacity(
+                                                0.3,
+                                              ),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: const [
+                                            Icon(
+                                              FontAwesomeIcons.crown,
+                                              color: Colors.white,
+                                              size: 10,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'PREMIUM',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
                                 ),
                                 const SizedBox(height: 4),
                                 Container(

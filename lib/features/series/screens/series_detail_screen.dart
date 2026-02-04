@@ -30,6 +30,12 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     super.initState();
     _isLoved = widget.series.isLoved;
     _fetchWatchlistStatus();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(adServiceProvider).showTimedAd(ref);
+      }
+    });
   }
 
   Future<void> _fetchWatchlistStatus() async {
@@ -211,7 +217,9 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                           child: ElevatedButton.icon(
                             onPressed: () {
                               if (episodes.isNotEmpty) {
-                                ref.read(adServiceProvider).showAdIfNecessary();
+                                ref
+                                    .read(adServiceProvider)
+                                    .showAdIfNecessary(ref);
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -431,7 +439,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                           ),
                         ),
                         onTap: () {
-                          ref.read(adServiceProvider).showAdIfNecessary();
+                          ref.read(adServiceProvider).showAdIfNecessary(ref);
                           Navigator.push(
                             context,
                             MaterialPageRoute(

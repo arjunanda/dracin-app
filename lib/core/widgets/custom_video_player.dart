@@ -126,7 +126,10 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
 
       nextController = VideoPlayerController.networkUrl(
         Uri.parse(url),
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: false,
+          allowBackgroundPlayback: false,
+        ),
       );
 
       // Add timeout to prevent infinite hang
@@ -305,7 +308,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
 
       // Start subtitle update timer
       _subtitleUpdateTimer?.cancel();
-      _subtitleUpdateTimer = Timer.periodic(const Duration(milliseconds: 100), (
+      _subtitleUpdateTimer = Timer.periodic(const Duration(milliseconds: 250), (
         _,
       ) {
         if (_controller != null && _controller!.value.isInitialized) {

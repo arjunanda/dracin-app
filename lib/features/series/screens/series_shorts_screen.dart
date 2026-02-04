@@ -17,6 +17,8 @@ import '../../../core/utils/share_utils.dart';
 import '../../home/providers/series_provider.dart';
 import '../../watchlist/providers/watchlist_provider.dart';
 import '../../../core/widgets/premium_upgrade_dialog.dart';
+import '../../../core/utils/route_utils.dart';
+import '../../../core/network/ad_service.dart';
 
 class SeriesShortsScreen extends ConsumerStatefulWidget {
   final String seriesId;
@@ -25,6 +27,7 @@ class SeriesShortsScreen extends ConsumerStatefulWidget {
   final bool showBackButton;
   final bool enableAds;
   final int initialIndex;
+  final String? initialEpisodeId;
 
   const SeriesShortsScreen({
     super.key,
@@ -34,6 +37,7 @@ class SeriesShortsScreen extends ConsumerStatefulWidget {
     this.showBackButton = false,
     this.enableAds = true,
     this.initialIndex = 0,
+    this.initialEpisodeId,
   });
 
   @override
@@ -57,25 +61,48 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
     false,
   );
   final ValueNotifier<bool> _isNavigatingNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _isPaymentProcessingNotifier = ValueNotifier<bool>(
+    false,
+  );
   DateTime? _lastPremiumPopupTime;
+  bool _hasHandledInitialEpisode = false;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: widget.initialIndex);
-    _currentIndexNotifier.value = widget.initialIndex;
+
+    // Check if we can determine the initial page immediately
+    int initialPage = widget.initialIndex;
+    final episodes = widget.seriesId == 'fyp'
+        ? ref.read(fypEpisodesProvider)
+        : ref.read(episodesProvider(widget.seriesId));
+
+    if (widget.initialEpisodeId != null && episodes.isNotEmpty) {
+      final index = episodes.indexWhere((e) => e.id == widget.initialEpisodeId);
+      if (index != -1) {
+        initialPage = index;
+        _hasHandledInitialEpisode = true;
+      }
+    }
+
+    _pageController = PageController(initialPage: initialPage);
+    _currentIndexNotifier.value = initialPage;
 
     // Force refresh episodes to get new HLS URLs
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       // Refresh user data to check for premium status updates
       ref.read(authProvider.notifier).refreshUser();
 
-      final episodes = widget.seriesId == 'fyp'
+      // We already fetched episodes above, use them or fetch again?
+      // The logic below uses ref.read again which is fine.
+
+      final currentEpisodes = widget.seriesId == 'fyp'
           ? ref.read(fypEpisodesProvider)
           : ref.read(episodesProvider(widget.seriesId));
 
-      if (episodes.isNotEmpty && widget.initialIndex < episodes.length) {
-        final episode = episodes[widget.initialIndex];
+      if (currentEpisodes.isNotEmpty && initialPage < currentEpisodes.length) {
+        final episode = currentEpisodes[initialPage];
         final user = ref.read(authProvider).user;
         final isUserPremium = user?.isPremium ?? false;
 
@@ -93,9 +120,25 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
               showDialog(
                 context: context,
                 barrierDismissible: true,
-                builder: (context) => const PremiumUpgradeDialog(),
+                builder: (context) => PremiumUpgradeDialog(
+                  onPaymentProcessing: (isProcessing) {
+                    if (mounted) {
+                      _isPaymentProcessingNotifier.value = isProcessing;
+                    }
+                  },
+                  onPaymentSuccess: () async {
+                    if (mounted) {
+                      await ref.read(authProvider.notifier).refreshUser();
+                      if (mounted) {
+                        _showSuccessDialog();
+                      }
+                    }
+                  },
+                ),
               ).then((_) {
-                _isPremiumDialogOpenNotifier.value = false;
+                if (mounted) {
+                  _isPremiumDialogOpenNotifier.value = false;
+                }
               });
             }
           }
@@ -109,9 +152,11 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
       }
       // Preload ads if enabled
       if (widget.enableAds) {
-        await _adMobService.loadRewardedAd();
         await _adMobService.loadInterstitialAd();
       }
+
+      // Show timed ad if allowed
+      ref.read(adServiceProvider).showTimedAd(ref);
     });
   }
 
@@ -124,7 +169,54 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
     _isBottomSheetOpenNotifier.dispose();
     _isPremiumDialogOpenNotifier.dispose();
     _isNavigatingNotifier.dispose();
+    _isPaymentProcessingNotifier.dispose();
     super.dispose();
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.darkSurface
+            : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green, size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'Selamat!',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Anda sekarang adalah member Premium!',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Mulai Nonton'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -133,6 +225,22 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
     final episodes = isFyp
         ? ref.watch(fypEpisodesProvider)
         : ref.watch(episodesProvider(widget.seriesId));
+
+    // Handle initial episode jump
+    if (widget.initialEpisodeId != null &&
+        !_hasHandledInitialEpisode &&
+        episodes.isNotEmpty) {
+      final index = episodes.indexWhere((e) => e.id == widget.initialEpisodeId);
+      if (index != -1) {
+        _hasHandledInitialEpisode = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_pageController.hasClients) {
+            _pageController.jumpToPage(index);
+            _currentIndexNotifier.value = index;
+          }
+        });
+      }
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -177,7 +285,25 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                           showDialog(
                             context: context,
                             barrierDismissible: true,
-                            builder: (context) => const PremiumUpgradeDialog(),
+                            builder: (context) => PremiumUpgradeDialog(
+                              onPaymentProcessing: (isProcessing) {
+                                if (mounted) {
+                                  _isPaymentProcessingNotifier.value =
+                                      isProcessing;
+                                }
+                              },
+                              onPaymentSuccess: () async {
+                                if (mounted) {
+                                  // Refresh user data
+                                  await ref
+                                      .read(authProvider.notifier)
+                                      .refreshUser();
+
+                                  // Show success dialog
+                                  _showSuccessDialog();
+                                }
+                              },
+                            ),
                           ).then((_) {
                             _isPremiumDialogOpenNotifier.value = false;
                           });
@@ -232,93 +358,117 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                                       return ValueListenableBuilder<bool>(
                                         valueListenable: _isNavigatingNotifier,
                                         builder: (context, isNavigating, _) {
-                                          return _ShortVideoItem(
-                                            key: ValueKey(episode.id),
-                                            episode: episode,
-                                            shouldPlay:
-                                                index == currentIndex &&
-                                                !isAdShowing &&
-                                                !isBottomSheetOpen &&
-                                                !isPremiumDialogOpen &&
-                                                !isNavigating,
-                                            shouldLoad:
-                                                index == currentIndex ||
-                                                index == currentIndex + 1,
-                                            totalEpisodes: episodes.length,
-                                            seriesId: widget.seriesId,
-                                            seriesTitle: widget.title,
-                                            bannerUrl: widget.bannerUrl,
-                                            onLike: () {
-                                              if (isFyp) {
-                                                ref
-                                                    .read(
-                                                      fypEpisodesProvider
-                                                          .notifier,
-                                                    )
-                                                    .toggleLike(episode.id);
-                                              } else {
-                                                ref
-                                                    .read(
-                                                      episodesProvider(
-                                                        widget.seriesId,
-                                                      ).notifier,
-                                                    )
-                                                    .toggleLike(episode.id);
-                                              }
+                                          return ValueListenableBuilder<bool>(
+                                            valueListenable:
+                                                _isPaymentProcessingNotifier,
+                                            builder: (context, isPaymentProcessing, _) {
+                                              final authState = ref.watch(
+                                                authProvider,
+                                              );
+                                              final isUserPremium =
+                                                  authState.user?.isPremium ??
+                                                  false;
+
+                                              final isAnyAdShowing = ref.watch(
+                                                isAnyAdShowingProvider,
+                                              );
+
+                                              return _ShortVideoItem(
+                                                key: ValueKey(episode.id),
+                                                episode: episode,
+                                                shouldPlay:
+                                                    index == currentIndex &&
+                                                    !isAdShowing &&
+                                                    !isAnyAdShowing &&
+                                                    !isBottomSheetOpen &&
+                                                    !isPremiumDialogOpen &&
+                                                    !isNavigating &&
+                                                    !isPaymentProcessing &&
+                                                    (!episode.isPremium ||
+                                                        isUserPremium),
+                                                shouldLoad:
+                                                    index == currentIndex ||
+                                                    index == currentIndex + 1,
+                                                totalEpisodes: episodes.length,
+                                                seriesId: widget.seriesId,
+                                                seriesTitle: widget.title,
+                                                bannerUrl: widget.bannerUrl,
+                                                onLike: () {
+                                                  if (isFyp) {
+                                                    ref
+                                                        .read(
+                                                          fypEpisodesProvider
+                                                              .notifier,
+                                                        )
+                                                        .toggleLike(episode.id);
+                                                  } else {
+                                                    ref
+                                                        .read(
+                                                          episodesProvider(
+                                                            widget.seriesId,
+                                                          ).notifier,
+                                                        )
+                                                        .toggleLike(episode.id);
+                                                  }
+                                                },
+                                                onView: () async {
+                                                  final deviceId =
+                                                      await DeviceService()
+                                                          .getDeviceId();
+                                                  if (!mounted) return;
+                                                  if (isFyp) {
+                                                    ref
+                                                        .read(
+                                                          fypEpisodesProvider
+                                                              .notifier,
+                                                        )
+                                                        .recordView(
+                                                          episode.id,
+                                                          deviceId,
+                                                        );
+                                                    ref
+                                                        .read(
+                                                          fypEpisodesProvider
+                                                              .notifier,
+                                                        )
+                                                        .refreshLikeStatus(
+                                                          episode.id,
+                                                        );
+                                                  } else {
+                                                    ref
+                                                        .read(
+                                                          episodesProvider(
+                                                            widget.seriesId,
+                                                          ).notifier,
+                                                        )
+                                                        .recordView(
+                                                          episode.id,
+                                                          deviceId,
+                                                        );
+                                                    ref
+                                                        .read(
+                                                          episodesProvider(
+                                                            widget.seriesId,
+                                                          ).notifier,
+                                                        )
+                                                        .refreshLikeStatus(
+                                                          episode.id,
+                                                        );
+                                                  }
+                                                },
+                                                pageController: _pageController,
+                                                showControlsNotifier:
+                                                    _showControlsNotifier,
+                                                isBottomSheetOpenNotifier:
+                                                    _isBottomSheetOpenNotifier,
+                                                isPremiumDialogOpenNotifier:
+                                                    _isPremiumDialogOpenNotifier,
+                                                isNavigatingNotifier:
+                                                    _isNavigatingNotifier,
+                                                isPaymentProcessingNotifier:
+                                                    _isPaymentProcessingNotifier,
+                                              );
                                             },
-                                            onView: () async {
-                                              final deviceId =
-                                                  await DeviceService()
-                                                      .getDeviceId();
-                                              if (isFyp) {
-                                                ref
-                                                    .read(
-                                                      fypEpisodesProvider
-                                                          .notifier,
-                                                    )
-                                                    .recordView(
-                                                      episode.id,
-                                                      deviceId,
-                                                    );
-                                                ref
-                                                    .read(
-                                                      fypEpisodesProvider
-                                                          .notifier,
-                                                    )
-                                                    .refreshLikeStatus(
-                                                      episode.id,
-                                                    );
-                                              } else {
-                                                ref
-                                                    .read(
-                                                      episodesProvider(
-                                                        widget.seriesId,
-                                                      ).notifier,
-                                                    )
-                                                    .recordView(
-                                                      episode.id,
-                                                      deviceId,
-                                                    );
-                                                ref
-                                                    .read(
-                                                      episodesProvider(
-                                                        widget.seriesId,
-                                                      ).notifier,
-                                                    )
-                                                    .refreshLikeStatus(
-                                                      episode.id,
-                                                    );
-                                              }
-                                            },
-                                            pageController: _pageController,
-                                            showControlsNotifier:
-                                                _showControlsNotifier,
-                                            isBottomSheetOpenNotifier:
-                                                _isBottomSheetOpenNotifier,
-                                            isPremiumDialogOpenNotifier:
-                                                _isPremiumDialogOpenNotifier,
-                                            isNavigatingNotifier:
-                                                _isNavigatingNotifier,
                                           );
                                         },
                                       );
@@ -445,6 +595,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
   final ValueNotifier<bool> isBottomSheetOpenNotifier;
   final ValueNotifier<bool> isPremiumDialogOpenNotifier;
   final ValueNotifier<bool> isNavigatingNotifier;
+  final ValueNotifier<bool> isPaymentProcessingNotifier;
 
   const _ShortVideoItem({
     super.key,
@@ -462,6 +613,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
     required this.isBottomSheetOpenNotifier,
     required this.isPremiumDialogOpenNotifier,
     required this.isNavigatingNotifier,
+    required this.isPaymentProcessingNotifier,
   });
 
   @override
@@ -469,7 +621,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
 }
 
 class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, RouteAware {
   VideoPlayerController? _videoController;
   late AnimationController _likeController;
   late Animation<double> _likeAnimation;
@@ -502,8 +654,46 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
 
     _isPremiumDialogOpenNotifier = widget.isPremiumDialogOpenNotifier;
 
+    // Listen to payment processing changes
+    widget.isPaymentProcessingNotifier.addListener(_onPaymentProcessingChanged);
+
     if (widget.shouldPlay) {
       widget.onView();
+    }
+  }
+
+  void _onPaymentProcessingChanged() {
+    if (widget.isPaymentProcessingNotifier.value) {
+      // Payment started - pause video
+      if (_videoController != null && _videoController!.value.isPlaying) {
+        _videoController!.pause();
+      }
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPushNext() {
+    // Pause video when leaving this screen (e.g. to LoginScreen)
+    if (_videoController != null && _videoController!.value.isPlaying) {
+      _videoController!.pause();
+    }
+  }
+
+  @override
+  void didPopNext() {
+    // Resume video when returning to this screen if it was playing
+    // For now we might want to keep it paused or check shouldPlay
+    if (widget.shouldPlay &&
+        _videoController != null &&
+        !_videoController!.value.isPlaying) {
+      // Optional: Auto-resume
+      // _videoController!.play();
     }
   }
 
@@ -512,6 +702,9 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
     super.didUpdateWidget(oldWidget);
     if (widget.shouldPlay && !oldWidget.shouldPlay) {
       widget.onView();
+      _videoController?.play();
+    } else if (!widget.shouldPlay && oldWidget.shouldPlay) {
+      _videoController?.pause();
     }
 
     // If the episode changed, reset local state
@@ -525,9 +718,59 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
 
   @override
   void dispose() {
+    widget.isPaymentProcessingNotifier.removeListener(
+      _onPaymentProcessingChanged,
+    );
+    routeObserver.unsubscribe(this);
     _likeController.dispose();
     _lockTimer?.cancel();
     super.dispose();
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.darkSurface
+            : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green, size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'Selamat!',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Anda sekarang adalah member Premium!',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Mulai Nonton'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _handleLike() {
@@ -1163,6 +1406,8 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                     final episodes = ref.watch(
                       episodesProvider(widget.episode.seriesId),
                     );
+                    final user = ref.watch(authProvider).user;
+                    final isUserPremium = user?.isPremium ?? false;
 
                     final itemCount = episodes.isNotEmpty
                         ? episodes.length
@@ -1185,11 +1430,12 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                             : widget.episode.episodeNumber == index + 1;
                         final isPremium = ep?.isPremium ?? false;
 
+                        // Should show as premium (amber/gold) only if it's premium AND user IS NOT premium
+                        // If user is premium, we show it as normal episode (unless it's the current one)
+                        final showAsPremium = isPremium && !isUserPremium;
+
                         return GestureDetector(
                           onTap: () {
-                            final user = ref.read(authProvider).user;
-                            final isUserPremium = user?.isPremium ?? false;
-
                             if (isPremium && !isUserPremium) {
                               Navigator.pop(context);
                               final now = DateTime.now();
@@ -1205,10 +1451,28 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                                 showDialog(
                                   context: context,
                                   barrierDismissible: true,
-                                  builder: (context) =>
-                                      const PremiumUpgradeDialog(),
+                                  builder: (context) => PremiumUpgradeDialog(
+                                    onPaymentProcessing: (isProcessing) {
+                                      if (mounted) {
+                                        widget
+                                                .isPaymentProcessingNotifier
+                                                .value =
+                                            isProcessing;
+                                      }
+                                    },
+                                    onPaymentSuccess: () async {
+                                      if (mounted) {
+                                        await this.ref
+                                            .read(authProvider.notifier)
+                                            .refreshUser();
+                                        _showSuccessDialog();
+                                      }
+                                    },
+                                  ),
                                 ).then((_) {
-                                  _isPremiumDialogOpenNotifier.value = false;
+                                  if (mounted) {
+                                    _isPremiumDialogOpenNotifier.value = false;
+                                  }
                                 });
                               }
                               return;
@@ -1255,12 +1519,12 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               border: Border.all(
                                 color: isCurrent
                                     ? AppColors.accent
-                                    : (isPremium
+                                    : (showAsPremium
                                           ? Colors.amber.withOpacity(0.5)
                                           : Colors.white.withOpacity(0.1)),
                                 width: isCurrent ? 2 : 1,
                               ),
-                              boxShadow: isCurrent || isPremium
+                              boxShadow: isCurrent || showAsPremium
                                   ? [
                                       BoxShadow(
                                         color:
@@ -1283,17 +1547,17 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                                     style: TextStyle(
                                       color: isCurrent
                                           ? AppColors.accent
-                                          : (isPremium
+                                          : (showAsPremium
                                                 ? Colors.amber
                                                 : Colors.white70),
-                                      fontWeight: isCurrent || isPremium
+                                      fontWeight: isCurrent || showAsPremium
                                           ? FontWeight.bold
                                           : FontWeight.normal,
                                       fontSize: 16,
                                     ),
                                   ),
                                 ),
-                                if (isPremium)
+                                if (showAsPremium)
                                   Positioned(
                                     top: 4,
                                     right: 4,
@@ -1301,6 +1565,24 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                                       Icons.workspace_premium,
                                       size: 10,
                                       color: Colors.amber,
+                                    ),
+                                  ),
+                                if (ep?.isWatched ?? false)
+                                  Positioned(
+                                    bottom: 0.5,
+                                    left: 1.5,
+                                    right: 1.5,
+                                    child: Container(
+                                      height: 7,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withOpacity(
+                                          0.8,
+                                        ),
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              bottom: Radius.circular(60),
+                                            ),
+                                      ),
                                     ),
                                   ),
                               ],

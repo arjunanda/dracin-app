@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/episode_model.dart';
 import '../services/series_service.dart';
@@ -88,10 +89,31 @@ class EpisodesNotifier extends StateNotifier<List<Episode>> {
   }
 
   Future<void> recordView(String episodeId, String deviceId) async {
+    // Optimistic UI update
+    final index = state.indexWhere((e) => e.id == episodeId);
+    if (index != -1) {
+      final episode = state[index];
+      // Only increment local view count if we want immediate feedback
+      // isWatched is definitely set to true
+      final newState = [...state];
+      newState[index] = episode.copyWith(
+        isWatched: true,
+        viewCount: episode.viewCount + (episode.isWatched ? 0 : 1),
+      );
+      state = newState;
+      debugPrint(
+        'DEBUG_VIEW: Optimistic update for $episodeId (isWatched=true, viewCount++)',
+      );
+    }
+
+    debugPrint(
+      'DEBUG_VIEW: Recording view for episode $episodeId (Device: $deviceId)',
+    );
     try {
-      await _service.recordEpisodeView(episodeId, deviceId);
+      final response = await _service.recordEpisodeView(episodeId, deviceId);
+      debugPrint('DEBUG_VIEW: API Success for $episodeId: ${response.message}');
     } catch (e) {
-      // Silently fail for views
+      debugPrint('DEBUG_VIEW: API Error for $episodeId: $e');
     }
   }
 
@@ -255,10 +277,31 @@ class FypEpisodesNotifier extends StateNotifier<List<Episode>> {
   }
 
   Future<void> recordView(String episodeId, String deviceId) async {
+    // Optimistic UI update
+    final index = state.indexWhere((e) => e.id == episodeId);
+    if (index != -1) {
+      final episode = state[index];
+      final newState = [...state];
+      newState[index] = episode.copyWith(
+        isWatched: true,
+        viewCount: episode.viewCount + (episode.isWatched ? 0 : 1),
+      );
+      state = newState;
+      debugPrint(
+        'DEBUG_VIEW_FYP: Optimistic update for $episodeId (isWatched=true, viewCount++)',
+      );
+    }
+
+    debugPrint(
+      'DEBUG_VIEW_FYP: Recording view for episode $episodeId (Device: $deviceId)',
+    );
     try {
-      await _service.recordEpisodeView(episodeId, deviceId);
+      final response = await _service.recordEpisodeView(episodeId, deviceId);
+      debugPrint(
+        'DEBUG_VIEW_FYP: API Success for $episodeId: ${response.message}',
+      );
     } catch (e) {
-      // Silently fail for views
+      debugPrint('DEBUG_VIEW_FYP: API Error for $episodeId: $e');
     }
   }
 

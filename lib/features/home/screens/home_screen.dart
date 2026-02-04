@@ -10,6 +10,7 @@ import '../../series/screens/series_shorts_screen.dart';
 import '../providers/series_provider.dart';
 import '../providers/category_provider.dart';
 import 'search_screen.dart';
+import '../../../core/network/ad_service.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +27,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+
+    // Initialize ad timer
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(adServiceProvider).initAdTimer();
+    });
   }
 
   @override
