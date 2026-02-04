@@ -49,6 +49,7 @@ dependencies:
   flutter_native_splash: ^2.4.7
   in_app_purchase: ^3.2.3
   cached_network_image: ^3.4.1
+  package_info_plus: ^9.0.0
 
 dev_dependencies:
   flutter_test:

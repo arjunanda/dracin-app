@@ -92,7 +92,7 @@ class SeriesEpisodesScreen extends ConsumerWidget {
                             radius: 28,
                             backgroundImage: NetworkImage(thumbnailUrl),
                           ),
-                          if (e.isPremium)
+                          if (e.isPremium && !isUserPremium)
                             Positioned(
                               right: 0,
                               bottom: 0,
@@ -124,7 +124,7 @@ class SeriesEpisodesScreen extends ConsumerWidget {
                                         ? Colors.white38
                                         : Colors.black38)
                                   : null,
-                              fontWeight: e.isPremium
+                              fontWeight: (e.isPremium && !isUserPremium)
                                   ? FontWeight.bold
                                   : FontWeight.normal,
                             ),
@@ -143,7 +143,7 @@ class SeriesEpisodesScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
-                        if (e.isPremium)
+                        if (e.isPremium && !isUserPremium)
                           Container(
                             margin: const EdgeInsets.only(left: 8),
                             padding: const EdgeInsets.symmetric(

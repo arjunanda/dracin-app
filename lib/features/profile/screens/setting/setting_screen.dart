@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/localization/language_provider.dart';
 import '../about/about_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../help/help_center_screen.dart';
 import '../../../auth/providers/auth_provider.dart';
@@ -175,13 +176,19 @@ class SettingScreen extends ConsumerWidget {
                         : Colors.black.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    '${AppStrings.get('version', lang)} 1.0.0',
-                    style: TextStyle(
-                      color: Colors.grey.withOpacity(0.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snapshot) {
+                      final version = snapshot.data?.version ?? '...';
+                      return Text(
+                        '${AppStrings.get('version', lang)} $version',
+                        style: TextStyle(
+                          color: Colors.grey.withOpacity(0.8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 12),

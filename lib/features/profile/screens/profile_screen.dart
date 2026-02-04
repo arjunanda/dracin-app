@@ -309,7 +309,59 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Center(
                       child: TextButton.icon(
                         onPressed: () {
-                          ref.read(authProvider.notifier).logout();
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.darkSurface
+                                  : Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              title: Text(
+                                AppStrings.get('logout', lang),
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              content: Text(
+                                lang == AppLanguage.id
+                                    ? 'Apakah Anda yakin ingin keluar?'
+                                    : 'Are you sure you want to logout?',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black87,
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(
+                                    AppStrings.get('cancel', lang),
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context); // Close dialog
+                                    ref.read(authProvider.notifier).logout();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Text(AppStrings.get('logout', lang)),
+                                ),
+                              ],
+                            ),
+                          );
                         },
                         icon: const Icon(
                           Icons.logout_rounded,

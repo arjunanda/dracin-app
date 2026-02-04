@@ -8,6 +8,7 @@ import '../../home/providers/series_provider.dart';
 import '../../player/screens/player_screen.dart';
 import '../../../core/network/ad_service.dart';
 import '../../comment/widgets/comment_section.dart';
+import '../../../core/widgets/premium_upgrade_dialog.dart';
 
 import '../../watchlist/providers/watchlist_provider.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -364,6 +365,9 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final episode = episodes[index];
+                    final user = ref.read(authProvider).user;
+                    final isUserPremium = user?.isPremium ?? false;
+                    final showPremiumLock = episode.isPremium && !isUserPremium;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
@@ -388,14 +392,20 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              '${episode.episodeNumber}',
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 20,
-                              ),
-                            ),
+                            child: showPremiumLock
+                                ? const Icon(
+                                    Icons.lock_rounded,
+                                    color: AppColors.accent,
+                                    size: 20,
+                                  )
+                                : Text(
+                                    '${episode.episodeNumber}',
+                                    style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 20,
+                                    ),
+                                  ),
                           ),
                         ),
                         title: Text(
@@ -432,13 +442,26 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                             color: AppColors.primary.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Icons.play_arrow_rounded,
-                            color: AppColors.primary,
+                          child: Icon(
+                            showPremiumLock
+                                ? Icons.workspace_premium_rounded
+                                : Icons.play_arrow_rounded,
+                            color: showPremiumLock
+                                ? AppColors.accent
+                                : AppColors.primary,
                             size: 24,
                           ),
                         ),
                         onTap: () {
+                          if (showPremiumLock) {
+                            showDialog(
+                              context: context,
+                              builder: (context) =>
+                                  const PremiumUpgradeDialog(),
+                            );
+                            return;
+                          }
+
                           ref.read(adServiceProvider).showAdIfNecessary(ref);
                           Navigator.push(
                             context,

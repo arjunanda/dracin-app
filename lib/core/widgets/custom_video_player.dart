@@ -127,7 +127,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
       nextController = VideoPlayerController.networkUrl(
         Uri.parse(url),
         videoPlayerOptions: VideoPlayerOptions(
-          mixWithOthers: false,
+          mixWithOthers: true,
           allowBackgroundPlayback: false,
         ),
       );
