@@ -83,10 +83,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             backgroundColor: isDark
                                 ? AppColors.darkSurface
                                 : Colors.white,
-                            backgroundImage: user?.avatar != null
-                                ? NetworkImage(user!.avatar!)
-                                : const NetworkImage(
-                                    'https://tse2.mm.bing.net/th/id/OIP.IrUBHhdMo6wWLFueKNreRwHaHa?rs=1&pid=ImgDetMain&o=7&rm=3',
+                            child: user?.avatar != null
+                                ? ClipOval(
+                                    child: Image.network(
+                                      user!.avatar!,
+                                      width: 90,
+                                      height: 90,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              _buildInitialAvatar(user.name),
+                                    ),
+                                  )
+                                : _buildInitialAvatar(
+                                    isLoggedIn ? (user?.name ?? 'U') : 'G',
                                   ),
                           ),
                         ),
@@ -478,6 +488,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             if (isSelected)
               const Icon(Icons.check_circle_rounded, color: AppColors.primary),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInitialAvatar(String? name) {
+    final initial = (name?.isNotEmpty ?? false) ? name![0].toUpperCase() : 'U';
+    return Container(
+      width: 90,
+      height: 90,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.accent],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: const TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );

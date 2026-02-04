@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/cupertino.dart';
@@ -41,7 +42,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final position = _scrollController.position;
     if (!position.hasPixels) return;
 
-    if (position.pixels >= position.maxScrollExtent - 300) {
+    if (!state.hasMore) return;
+
+    if (position.pixels >= position.maxScrollExtent - 200) {
       ref.read(seriesProvider.notifier).getSeries();
     }
   }
@@ -148,7 +151,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return [
       SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         sliver: SliverGrid(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
@@ -162,13 +165,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
-      if (state.isLoading)
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(child: CupertinoActivityIndicator()),
+      if (state.hasMore)
+        SliverToBoxAdapter(
+          child: Container(
+            height: 50,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.only(bottom: 20),
+            child: state.isLoading
+                ? const CupertinoActivityIndicator()
+                : const SizedBox.shrink(),
           ),
-        ),
+        )
+      else
+        const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
     ];
   }
 }
@@ -213,10 +222,12 @@ class _BlurBlob extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: const SizedBox.shrink(),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, color.withOpacity(0.0)],
+          stops: const [0.0, 0.7],
+        ),
       ),
     );
   }
@@ -333,13 +344,18 @@ class _SeriesCard extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                series.bannerUrl,
+              child: CachedNetworkImage(
+                imageUrl: series.bannerUrl,
                 fit: BoxFit.cover,
                 width: double.infinity,
-                // Optimization: Cache size to reduce memory usage
-                cacheWidth: 400,
-                errorBuilder: (_, __, ___) =>
+                memCacheWidth: 400,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey.withOpacity(0.1),
+                  child: const Center(
+                    child: CupertinoActivityIndicator(radius: 10),
+                  ),
+                ),
+                errorWidget: (context, url, error) =>
                     Container(color: Colors.grey.shade900),
               ),
             ),

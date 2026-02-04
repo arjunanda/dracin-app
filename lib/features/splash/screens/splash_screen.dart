@@ -121,7 +121,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Experience Premium Cinema',
+                    'King Of Short Drama',
                     style: GoogleFonts.rubik(
                       color: AppColors.darkTextSecondary.withOpacity(0.7),
                       fontSize: 12,

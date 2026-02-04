@@ -4,8 +4,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/localization/language_provider.dart';
 import '../about/about_screen.dart';
-import './notification_setting_screen.dart';
+
 import '../help/help_center_screen.dart';
+import '../../../auth/providers/auth_provider.dart';
 
 class SettingScreen extends ConsumerWidget {
   const SettingScreen({super.key});
@@ -14,6 +15,8 @@ class SettingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = ref.watch(languageProvider);
+    final authState = ref.watch(authProvider);
+    final isLoggedIn = authState.status == AuthStatus.authenticated;
 
     return Scaffold(
       backgroundColor: isDark
@@ -64,21 +67,21 @@ class SettingScreen extends ConsumerWidget {
                   : ThemeMode.dark;
             },
           ),
-          _buildSettingTile(
-            context,
-            icon: Icons.notifications_active_rounded,
-            title: AppStrings.get('notifications', lang),
-            subtitle: lang == AppLanguage.id
-                ? 'Atur peringatan aplikasi Anda'
-                : 'Manage your app alerts',
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const NotificationSettingScreen(),
-                ),
-              );
-            },
-          ),
+          // _buildSettingTile(
+          //   context,
+          //   icon: Icons.notifications_active_rounded,
+          //   title: AppStrings.get('notifications', lang),
+          //   subtitle: lang == AppLanguage.id
+          //       ? 'Atur peringatan aplikasi Anda'
+          //       : 'Manage your app alerts',
+          //   onTap: () {
+          //     Navigator.of(context).push(
+          //       MaterialPageRoute(
+          //         builder: (context) => const NotificationSettingScreen(),
+          //       ),
+          //     );
+          //   },
+          // ),// ),
           _buildSettingTile(
             context,
             icon: Icons.translate_rounded,
@@ -140,6 +143,22 @@ class SettingScreen extends ConsumerWidget {
               );
             },
           ),
+          if (isLoggedIn) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Divider(height: 1, thickness: 0.5),
+            ),
+            _buildSectionHeader(context, AppStrings.get('account', lang)),
+            _buildSettingTile(
+              context,
+              icon: Icons.delete_forever_rounded,
+              title: AppStrings.get('delete_account', lang),
+              subtitle: AppStrings.get('delete_account_desc', lang),
+              textColor: Colors.redAccent,
+              iconColor: Colors.redAccent,
+              onTap: () => _showDeleteAccountDialog(context, ref, lang),
+            ),
+          ],
 
           const SizedBox(height: 60),
           Center(
@@ -333,6 +352,8 @@ class SettingScreen extends ConsumerWidget {
     required String subtitle,
     Widget? trailing,
     required VoidCallback onTap,
+    Color? textColor,
+    Color? iconColor,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
@@ -343,15 +364,15 @@ class SettingScreen extends ConsumerWidget {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: (iconColor ?? AppColors.primary).withOpacity(0.1),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, color: AppColors.primary, size: 22),
+          child: Icon(icon, color: iconColor ?? AppColors.primary, size: 22),
         ),
         title: Text(
           title,
           style: TextStyle(
-            color: isDark ? Colors.white : Colors.black,
+            color: textColor ?? (isDark ? Colors.white : Colors.black),
             fontWeight: FontWeight.bold,
             fontSize: 15,
           ),
@@ -375,6 +396,86 @@ class SettingScreen extends ConsumerWidget {
               size: 16,
             ),
         onTap: onTap,
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppLanguage lang,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).dialogBackgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.redAccent,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                AppStrings.get('delete_account_confirm_title', lang),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          AppStrings.get('delete_account_confirm_msg', lang),
+          style: TextStyle(
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withOpacity(0.8),
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).textTheme.bodyMedium?.color,
+            ),
+            child: Text(AppStrings.get('cancel', lang)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              try {
+                await ref.read(authProvider.notifier).deleteAccount();
+                if (context.mounted) {
+                  Navigator.pop(context); // Go back to profile screen
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Text(AppStrings.get('delete', lang)),
+          ),
+        ],
       ),
     );
   }

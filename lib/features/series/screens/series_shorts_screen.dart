@@ -56,6 +56,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
   final ValueNotifier<bool> _isPremiumDialogOpenNotifier = ValueNotifier<bool>(
     false,
   );
+  final ValueNotifier<bool> _isNavigatingNotifier = ValueNotifier<bool>(false);
   DateTime? _lastPremiumPopupTime;
 
   @override
@@ -66,6 +67,9 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
 
     // Force refresh episodes to get new HLS URLs
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Refresh user data to check for premium status updates
+      ref.read(authProvider.notifier).refreshUser();
+
       final episodes = widget.seriesId == 'fyp'
           ? ref.read(fypEpisodesProvider)
           : ref.read(episodesProvider(widget.seriesId));
@@ -119,6 +123,7 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
     _showControlsNotifier.dispose();
     _isBottomSheetOpenNotifier.dispose();
     _isPremiumDialogOpenNotifier.dispose();
+    _isNavigatingNotifier.dispose();
     super.dispose();
   }
 
@@ -224,82 +229,98 @@ class _SeriesShortsScreenState extends ConsumerState<SeriesShortsScreen> {
                                     valueListenable:
                                         _isPremiumDialogOpenNotifier,
                                     builder: (context, isPremiumDialogOpen, _) {
-                                      return _ShortVideoItem(
-                                        key: ValueKey(episode.id),
-                                        episode: episode,
-                                        shouldPlay:
-                                            index == currentIndex &&
-                                            !isAdShowing &&
-                                            !isBottomSheetOpen &&
-                                            !isPremiumDialogOpen,
-                                        shouldLoad:
-                                            index == currentIndex ||
-                                            index == currentIndex + 1,
-                                        totalEpisodes: episodes.length,
-                                        seriesId: widget.seriesId,
-                                        seriesTitle: widget.title,
-                                        bannerUrl: widget.bannerUrl,
-                                        onLike: () {
-                                          if (isFyp) {
-                                            ref
-                                                .read(
-                                                  fypEpisodesProvider.notifier,
-                                                )
-                                                .toggleLike(episode.id);
-                                          } else {
-                                            ref
-                                                .read(
-                                                  episodesProvider(
-                                                    widget.seriesId,
-                                                  ).notifier,
-                                                )
-                                                .toggleLike(episode.id);
-                                          }
+                                      return ValueListenableBuilder<bool>(
+                                        valueListenable: _isNavigatingNotifier,
+                                        builder: (context, isNavigating, _) {
+                                          return _ShortVideoItem(
+                                            key: ValueKey(episode.id),
+                                            episode: episode,
+                                            shouldPlay:
+                                                index == currentIndex &&
+                                                !isAdShowing &&
+                                                !isBottomSheetOpen &&
+                                                !isPremiumDialogOpen &&
+                                                !isNavigating,
+                                            shouldLoad:
+                                                index == currentIndex ||
+                                                index == currentIndex + 1,
+                                            totalEpisodes: episodes.length,
+                                            seriesId: widget.seriesId,
+                                            seriesTitle: widget.title,
+                                            bannerUrl: widget.bannerUrl,
+                                            onLike: () {
+                                              if (isFyp) {
+                                                ref
+                                                    .read(
+                                                      fypEpisodesProvider
+                                                          .notifier,
+                                                    )
+                                                    .toggleLike(episode.id);
+                                              } else {
+                                                ref
+                                                    .read(
+                                                      episodesProvider(
+                                                        widget.seriesId,
+                                                      ).notifier,
+                                                    )
+                                                    .toggleLike(episode.id);
+                                              }
+                                            },
+                                            onView: () async {
+                                              final deviceId =
+                                                  await DeviceService()
+                                                      .getDeviceId();
+                                              if (isFyp) {
+                                                ref
+                                                    .read(
+                                                      fypEpisodesProvider
+                                                          .notifier,
+                                                    )
+                                                    .recordView(
+                                                      episode.id,
+                                                      deviceId,
+                                                    );
+                                                ref
+                                                    .read(
+                                                      fypEpisodesProvider
+                                                          .notifier,
+                                                    )
+                                                    .refreshLikeStatus(
+                                                      episode.id,
+                                                    );
+                                              } else {
+                                                ref
+                                                    .read(
+                                                      episodesProvider(
+                                                        widget.seriesId,
+                                                      ).notifier,
+                                                    )
+                                                    .recordView(
+                                                      episode.id,
+                                                      deviceId,
+                                                    );
+                                                ref
+                                                    .read(
+                                                      episodesProvider(
+                                                        widget.seriesId,
+                                                      ).notifier,
+                                                    )
+                                                    .refreshLikeStatus(
+                                                      episode.id,
+                                                    );
+                                              }
+                                            },
+                                            pageController: _pageController,
+                                            showControlsNotifier:
+                                                _showControlsNotifier,
+                                            isBottomSheetOpenNotifier:
+                                                _isBottomSheetOpenNotifier,
+                                            isPremiumDialogOpenNotifier:
+                                                _isPremiumDialogOpenNotifier,
+                                            isNavigatingNotifier:
+                                                _isNavigatingNotifier,
+                                          );
                                         },
-                                        onView: () async {
-                                          final deviceId = await DeviceService()
-                                              .getDeviceId();
-                                          if (isFyp) {
-                                            ref
-                                                .read(
-                                                  fypEpisodesProvider.notifier,
-                                                )
-                                                .recordView(
-                                                  episode.id,
-                                                  deviceId,
-                                                );
-                                            ref
-                                                .read(
-                                                  fypEpisodesProvider.notifier,
-                                                )
-                                                .refreshLikeStatus(episode.id);
-                                          } else {
-                                            ref
-                                                .read(
-                                                  episodesProvider(
-                                                    widget.seriesId,
-                                                  ).notifier,
-                                                )
-                                                .recordView(
-                                                  episode.id,
-                                                  deviceId,
-                                                );
-                                            ref
-                                                .read(
-                                                  episodesProvider(
-                                                    widget.seriesId,
-                                                  ).notifier,
-                                                )
-                                                .refreshLikeStatus(episode.id);
-                                          }
-                                        },
-                                        pageController: _pageController,
-                                        showControlsNotifier:
-                                            _showControlsNotifier,
-                                        isBottomSheetOpenNotifier:
-                                            _isBottomSheetOpenNotifier,
-                                        isPremiumDialogOpenNotifier:
-                                            _isPremiumDialogOpenNotifier,
                                       );
                                     },
                                   );
@@ -423,6 +444,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
   final ValueNotifier<bool> showControlsNotifier;
   final ValueNotifier<bool> isBottomSheetOpenNotifier;
   final ValueNotifier<bool> isPremiumDialogOpenNotifier;
+  final ValueNotifier<bool> isNavigatingNotifier;
 
   const _ShortVideoItem({
     super.key,
@@ -439,6 +461,7 @@ class _ShortVideoItem extends ConsumerStatefulWidget {
     required this.showControlsNotifier,
     required this.isBottomSheetOpenNotifier,
     required this.isPremiumDialogOpenNotifier,
+    required this.isNavigatingNotifier,
   });
 
   @override
@@ -1191,8 +1214,13 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                               return;
                             }
 
+                            // Close bottom sheet first
                             Navigator.pop(context);
+
                             if (widget.seriesId == 'fyp') {
+                              // Mark as navigating to pause video
+                              widget.isNavigatingNotifier.value = true;
+
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -1208,7 +1236,10 @@ class _ShortVideoItemState extends ConsumerState<_ShortVideoItem>
                                     initialIndex: index,
                                   ),
                                 ),
-                              );
+                              ).then((_) {
+                                // Resume video when back
+                                widget.isNavigatingNotifier.value = false;
+                              });
                             } else {
                               pageController.animateToPage(
                                 index,

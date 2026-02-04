@@ -10,7 +10,7 @@ class SeriesService {
 
   Future<ApiResponse<PaginationData<Series>>> getSeriesList({
     int page = 1,
-    int pageSize = 10,
+    int pageSize = 40,
     String? type,
     String? categoryId,
   }) async {

@@ -28,4 +28,8 @@ class AuthService {
     );
     return apiResponse.data;
   }
+
+  Future<void> deleteAccount() async {
+    await _dio.delete('me');
+  }
 }

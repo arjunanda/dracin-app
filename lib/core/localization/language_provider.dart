@@ -221,6 +221,26 @@ class AppStrings {
       AppLanguage.id: 'Tonton {title} - Episode {episode} di Kisah!',
       AppLanguage.en: 'Watch {title} - Episode {episode} on Kisah!',
     },
+    'account': {AppLanguage.id: 'Akun', AppLanguage.en: 'Account'},
+    'delete_account': {
+      AppLanguage.id: 'Hapus Akun',
+      AppLanguage.en: 'Delete Account',
+    },
+    'delete_account_confirm_title': {
+      AppLanguage.id: 'Hapus Akun Anda?',
+      AppLanguage.en: 'Delete Account?',
+    },
+    'delete_account_confirm_msg': {
+      AppLanguage.id:
+          'Tindakan ini permanen dan tidak dapat dibatalkan. Semua data Anda akan dihapus selamanya.',
+      AppLanguage.en:
+          'This action is permanent and cannot be undone. All your data will be wiped forever.',
+    },
+    'delete': {AppLanguage.id: 'Hapus', AppLanguage.en: 'Delete'},
+    'delete_account_desc': {
+      AppLanguage.id: 'Hapus akun dan data permanen',
+      AppLanguage.en: 'Permanently delete account and data',
+    },
   };
 
   static String get(String key, AppLanguage lang) {

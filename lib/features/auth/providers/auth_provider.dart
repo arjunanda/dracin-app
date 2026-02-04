@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
@@ -109,10 +110,45 @@ class AuthNotifier extends StateNotifier<AuthState> {
       print('AUTH_DEBUG: Login Successful');
     } catch (e) {
       print('AUTH_DEBUG ERROR: $e');
+      String errorMessage = e.toString();
+
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          errorMessage =
+              'Connection error. Please check your internet connection.';
+        } else if (e.response?.statusCode == 400) {
+          // Handle specific backend errors if needed
+          errorMessage =
+              e.response?.data['message'] ?? 'Login failed due to bad request';
+        }
+      }
+
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
-        error: e.toString(),
+        error: errorMessage,
       );
+    }
+  }
+
+  Future<void> refreshUser() async {
+    final token = await _storage.getToken();
+    if (token != null) {
+      try {
+        final user = await _authService.getMe();
+        state = state.copyWith(status: AuthStatus.authenticated, user: user);
+      } catch (e) {
+        // Silent failure if refresh fails, keep old state
+        print('AUTH_DEBUG: Refresh user failed: $e');
+      }
+    }
+  }
+
+  void setPremiumStatus(bool isPremium) {
+    if (state.user != null) {
+      final updatedUser = state.user!.copyWith(isPremium: isPremium);
+      state = state.copyWith(user: updatedUser);
     }
   }
 
@@ -120,5 +156,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _googleSignIn.signOut();
     await _storage.deleteToken();
     state = state.copyWith(status: AuthStatus.unauthenticated, user: null);
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      await _authService.deleteAccount();
+      await logout();
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      rethrow;
+    }
   }
 }

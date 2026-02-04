@@ -124,7 +124,10 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
       final url = widget.sources[_currentSourceIndex].url;
       debugPrint('🎬 CustomVideoPlayer: Initializing with URL: $url');
 
-      nextController = VideoPlayerController.networkUrl(Uri.parse(url));
+      nextController = VideoPlayerController.networkUrl(
+        Uri.parse(url),
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
 
       // Add timeout to prevent infinite hang
       await nextController.initialize().timeout(
@@ -186,11 +189,16 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
       // Dispose old controller AFTER swap and rebuild
       if (oldController != null) {
         debugPrint('🎬 CustomVideoPlayer: Disposing old controller');
+        // Pause old controller immediately to release audio resources
+        if (oldController.value.isPlaying) {
+          oldController.pause();
+        }
+
         if (widget.onControllerWillDispose != null) {
           widget.onControllerWillDispose!();
         }
         // Small delay to ensure UI has switched to new controller
-        Future.delayed(const Duration(milliseconds: 100), () {
+        Future.delayed(const Duration(milliseconds: 300), () {
           oldController.dispose();
         });
       }
@@ -227,16 +235,18 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     return 0;
   }
 
-  void _togglePlayPause() {
+  void _togglePlayPause() async {
     if (_controller == null || !_isInitialized) return;
 
-    setState(() {
-      if (_controller!.value.isPlaying) {
-        _controller!.pause();
-      } else {
-        _controller!.play();
-      }
-    });
+    if (_controller!.value.isPlaying) {
+      await _controller!.pause();
+    } else {
+      await _controller!.play();
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
     _resetHideTimer();
   }
 
@@ -405,7 +415,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
           '🎬 CustomVideoPlayer: AutoPlay changed to ${widget.autoPlay}',
         );
         final controller = _controller!;
-        Future.microtask(() {
+        Future.microtask(() async {
           if (mounted) {
             if (widget.autoPlay) {
               controller.play();

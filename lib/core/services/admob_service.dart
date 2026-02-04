@@ -17,7 +17,7 @@ class AdMobService {
 
   // Google Test Ad Unit IDs for Interstitial Ads
   static const String _testInterstitialAndroid =
-      'ca-app-pub-3940256099942544/1033173712';
+      'ca-app-pub-1590516571247789/1911035668';
   static const String _testInterstitialIOS =
       'ca-app-pub-3940256099942544/4411468910';
 

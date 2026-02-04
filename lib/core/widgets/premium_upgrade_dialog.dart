@@ -58,7 +58,7 @@ class PremiumUpgradeDialog extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Tonton semua episode premium tanpa batas dan dukung kreator favoritmu!',
+                    'Cukup bayar sekali, nikmati semua episode sepuasnya.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
@@ -117,6 +117,25 @@ class PremiumUpgradeDialog extends ConsumerWidget {
                         child: ElevatedButton(
                           onPressed: () async {
                             // Call Payment Service
+                            final authState = ref.read(authProvider);
+                            final authNotifier = ref.read(
+                              authProvider.notifier,
+                            );
+
+                            if (authState.status != AuthStatus.authenticated) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Silakan login terlebih dahulu untuk membeli Premium',
+                                  ),
+                                ),
+                              );
+                              // Trigger generic sign in (e.g. Google Sign In)
+                              authNotifier.signInWithGoogle();
+                              return;
+                            }
+
                             await PaymentService().buyPremium();
 
                             // For simulation since we don't have real Google Play IDs
@@ -134,7 +153,8 @@ class PremiumUpgradeDialog extends ConsumerWidget {
 
                               // Simulate backend delay then refresh
                               await Future.delayed(const Duration(seconds: 2));
-                              ref.read(authProvider.notifier).checkAuth();
+                              authNotifier
+                                  .refreshUser(); // Verify with backend in bg
                             }
                           },
                           style: ElevatedButton.styleFrom(
