@@ -91,7 +91,7 @@ class PremiumUpgradeDialog extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Rp 80.000',
+                          'Rp 25.000',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,

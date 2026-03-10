@@ -96,6 +96,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
 
   Future<void> _initPlayer() async {
     if (_isSwitchingQuality) return;
+    if (_isDragging) return; // Don't reinit while user is scrubbing
 
     final bool isFirstInit = _controller == null;
     debugPrint(
@@ -189,7 +190,10 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
         }
       }
 
-      // Dispose old controller AFTER swap and rebuild
+      // Dispose old controller AFTER swap and rebuild.
+      // IMPORTANT: null out _controller reference first so Flutter's render
+      // tree never holds two live VideoPlayer controllers simultaneously,
+      // which is what causes frames to visually "stack" on screen.
       if (oldController != null) {
         debugPrint('🎬 CustomVideoPlayer: Disposing old controller');
         // Pause old controller immediately to release audio resources
@@ -200,8 +204,9 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
         if (widget.onControllerWillDispose != null) {
           widget.onControllerWillDispose!();
         }
-        // Small delay to ensure UI has switched to new controller
-        Future.delayed(const Duration(milliseconds: 300), () {
+        // Delay dispose to let the UI fully switch to the new controller,
+        // but do NOT reassign _controller after this point.
+        Future.delayed(const Duration(milliseconds: 500), () {
           oldController.dispose();
         });
       }
@@ -406,6 +411,10 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     super.didUpdateWidget(oldWidget);
     debugPrint('🎬 CustomVideoPlayer: didUpdateWidget');
 
+    // Never reinitialize during a scrub — it causes the old and new
+    // controllers to both render to the screen in the same frame.
+    if (_isDragging) return;
+
     if (widget.sources.first.url != oldWidget.sources.first.url) {
       debugPrint('🎬 CustomVideoPlayer: URL changed, reinitializing');
       _initPlayer();
@@ -517,14 +526,14 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
           if (_selectedSubtitleIndex != -1 && _currentSubtitleText != null)
             Positioned.fill(
               child: Align(
-                alignment: const Alignment(0, 0.1),
+                alignment: const Alignment(0, 0.2),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     _currentSubtitleText!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 26,
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       height: 1.4,
