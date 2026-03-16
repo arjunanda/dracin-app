@@ -57,6 +57,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final episodes = ref.watch(episodesProvider(widget.series.id));
+    final authState = ref.watch(authProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final series = widget.series;
 
@@ -365,7 +366,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final episode = episodes[index];
-                    final user = ref.read(authProvider).user;
+                    final user = authState.user;
                     final isUserPremium = user?.isPremium ?? false;
                     final showPremiumLock = episode.isPremium && !isUserPremium;
                     return Container(

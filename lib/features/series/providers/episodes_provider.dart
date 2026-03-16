@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/episode_model.dart';
 import '../services/series_service.dart';
 import '../../home/providers/series_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../../core/utils/secure_storage.dart';
 
 final episodesProvider =
@@ -10,6 +11,8 @@ final episodesProvider =
       ref,
       seriesId,
     ) {
+      // Refresh episodes when auth status changes (login/logout)
+      ref.watch(authProvider.select((s) => s.status));
       final service = ref.read(seriesServiceProvider);
       final storage = ref.read(secureStorageProvider);
       return EpisodesNotifier(service, storage, seriesId);
@@ -172,6 +175,8 @@ class EpisodesNotifier extends StateNotifier<List<Episode>> {
 
 final fypEpisodesProvider =
     StateNotifierProvider<FypEpisodesNotifier, List<Episode>>((ref) {
+      // Refresh FYP episodes when auth status changes
+      ref.watch(authProvider.select((s) => s.status));
       final service = ref.read(seriesServiceProvider);
       final storage = ref.read(secureStorageProvider);
       return FypEpisodesNotifier(service, storage);

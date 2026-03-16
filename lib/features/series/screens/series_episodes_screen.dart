@@ -21,6 +21,7 @@ class SeriesEpisodesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final episodes = ref.watch(episodesProvider(seriesId));
+    final authState = ref.watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -51,7 +52,7 @@ class SeriesEpisodesScreen extends ConsumerWidget {
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   final e = episodes[index];
-                  final user = ref.read(authProvider).user;
+                  final user = authState.user;
                   final isUserPremium = user?.isPremium ?? false;
                   final isWatched = e.isWatched;
 

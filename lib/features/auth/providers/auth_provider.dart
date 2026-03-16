@@ -57,10 +57,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = state.copyWith(status: AuthStatus.authenticated, user: user);
       } catch (e) {
         await _storage.deleteToken();
-        state = state.copyWith(status: AuthStatus.unauthenticated);
+        state = AuthState(status: AuthStatus.unauthenticated);
       }
     } else {
-      state = state.copyWith(status: AuthStatus.unauthenticated);
+      state = AuthState(status: AuthStatus.unauthenticated);
     }
   }
 
@@ -141,6 +141,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       } catch (e) {
         // Silent failure if refresh fails, keep old state
         print('AUTH_DEBUG: Refresh user failed: $e');
+        if (e is DioException && e.response?.statusCode == 401) {
+          await _storage.deleteToken();
+          state = AuthState(status: AuthStatus.unauthenticated);
+        }
+      }
+    } else {
+      // Clear user if token is null
+      if (state.status != AuthStatus.initial) {
+        state = AuthState(status: AuthStatus.unauthenticated);
       }
     }
   }
@@ -155,7 +164,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     await _googleSignIn.signOut();
     await _storage.deleteToken();
-    state = state.copyWith(status: AuthStatus.unauthenticated, user: null);
+    state = AuthState(status: AuthStatus.unauthenticated);
   }
 
   Future<void> deleteAccount() async {
