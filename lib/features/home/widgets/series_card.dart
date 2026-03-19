@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/series_model.dart';
-import '../../series/screens/series_detail_screen.dart';
+import '../../series/screens/series_shorts_screen.dart';
 import '../../../core/theme/app_colors.dart';
 
 class SeriesCard extends StatelessWidget {
@@ -23,7 +23,12 @@ class SeriesCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => SeriesDetailScreen(series: series),
+            builder: (context) => SeriesShortsScreen(
+              seriesId: series.id,
+              title: series.title,
+              bannerUrl: series.bannerUrl,
+              showBackButton: true,
+            ),
           ),
         );
       },

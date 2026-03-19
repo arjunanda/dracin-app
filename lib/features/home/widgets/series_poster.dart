@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/series_model.dart';
-import '../../series/screens/series_detail_screen.dart';
+import '../../series/screens/series_shorts_screen.dart';
 
 class SeriesPoster extends StatelessWidget {
   final Series series;
@@ -19,7 +19,14 @@ class SeriesPoster extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => SeriesDetailScreen(series: series)),
+        MaterialPageRoute(
+          builder: (_) => SeriesShortsScreen(
+            seriesId: series.id,
+            title: series.title,
+            bannerUrl: series.bannerUrl,
+            showBackButton: true,
+          ),
+        ),
       ),
       child: Container(
         width: width,

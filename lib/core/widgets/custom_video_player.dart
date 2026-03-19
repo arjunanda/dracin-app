@@ -206,9 +206,17 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
         }
         // Delay dispose to let the UI fully switch to the new controller,
         // but do NOT reassign _controller after this point.
-        Future.delayed(const Duration(milliseconds: 500), () {
-          oldController.dispose();
-        });
+        // Future.delayed(const Duration(milliseconds: 500), () {
+        //   oldController.dispose();
+        // });
+
+        if (oldController.value.isPlaying) {
+          oldController.pause();
+        }
+        if (widget.onControllerWillDispose != null) {
+          widget.onControllerWillDispose!();
+        }
+        oldController.dispose();
       }
 
       debugPrint('🎬 CustomVideoPlayer: Ready! Quality: $_detectedQuality');
@@ -526,14 +534,14 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
           if (_selectedSubtitleIndex != -1 && _currentSubtitleText != null)
             Positioned.fill(
               child: Align(
-                alignment: const Alignment(0, 0.2),
+                alignment: const Alignment(0, 0.4),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     _currentSubtitleText!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 26,
+                      fontSize: 24,
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       height: 1.4,
